@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+/* Terminal color palette */
+:root {
+  --terminal-bg: #050505;
+  --terminal-text: #EAEAEA;
+  --terminal-dim: #666666;
+  --terminal-vibe: #00D9FF;
+  --terminal-tension: #FF2E63;
+  --terminal-trust: #FFB300;
+  --terminal-success: #00FF88;
+  --terminal-danger: #FF4444;
+}
+
+@theme inline {
+  /* Colors */
+  --color-terminal-bg: var(--terminal-bg);
+  --color-terminal-text: var(--terminal-text);
+  --color-terminal-dim: var(--terminal-dim);
+  --color-terminal-vibe: var(--terminal-vibe);
+  --color-terminal-tension: var(--terminal-tension);
+  --color-terminal-trust: var(--terminal-trust);
+  --color-terminal-success: var(--terminal-success);
+  --color-terminal-danger: var(--terminal-danger);
+
+  /* Fonts - using Next.js font variables */
+  --font-family-mono: var(--font-mono), 'Fira Code', 'Consolas', monospace;
+  --font-family-serif: var(--font-serif), 'Georgia', serif;
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--terminal-bg);
+  color: var(--terminal-text);
+  font-family: var(--font-family-mono);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Scrollbar styling (for the terminal feel) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--terminal-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--terminal-dim);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--terminal-text);
+}
+
+/* Selection styling */
+::selection {
+  background: var(--terminal-tension);
+  color: var(--terminal-bg);
+}
+
+/* Focus styling */
+*:focus {
+  outline: 2px solid var(--terminal-vibe);
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for inputs inside unified bars */
+input.bg-transparent:focus,
+.input-no-focus:focus {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+/* Font classes for use in components */
+.font-mono {
+  font-family: var(--font-family-mono);
+}
+
+.font-serif {
+  font-family: var(--font-family-serif);
+}
+
+/* Utility classes for terminal colors */
+.text-vibe { color: var(--terminal-vibe); }
+.text-tension { color: var(--terminal-tension); }
+.text-trust { color: var(--terminal-trust); }
+.text-success { color: var(--terminal-success); }
+.text-danger { color: var(--terminal-danger); }
+.text-dim { color: var(--terminal-dim); }
+
+.bg-terminal { background: var(--terminal-bg); }
+.border-vibe { border-color: var(--terminal-vibe); }
+.border-tension { border-color: var(--terminal-tension); }
+.border-trust { border-color: var(--terminal-trust); }
+
+/* Animation for blinking cursor */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Tension glow effect for border */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--terminal-tension); }
+  50% { box-shadow: 0 0 20px var(--terminal-tension); }
+}
+
+.glow-tension {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* CRT Monitor Effects */
+@keyframes crt-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.98; }
+  94% { opacity: 1; }
+  97% { opacity: 0.99; }
+  98% { opacity: 1; }
+}
+
+/* Steam rise - back layer (distant, slower) */
+@keyframes steam-rise-back {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.8);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.1;
+    transform: translateY(-50vh) translateX(var(--drift, 0)) scale(1.1);
+  }
+  100% {
+    transform: translateY(-110vh) translateX(calc(var(--drift, 0) * 1.5)) scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Steam rise - front layer (closer, faster) */
+@keyframes steam-rise-front {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.9);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.15;
+    transform: translateY(-50vh) translateX(var(--drift, 0)) scale(1.2);
+  }
+  100% {
+    transform: translateY(-110vh) translateX(calc(var(--drift, 0) * 1.3)) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Floating dust mote animation */
+@keyframes dust-float {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: var(--dust-opacity-start, 0.05);
+  }
+  25% {
+    transform: translate(var(--dust-drift-x, 20px), calc(var(--dust-drift-y, -30px) * 0.25)) scale(1.1);
+  }
+  50% {
+    transform: translate(calc(var(--dust-drift-x, 20px) * -0.5), calc(var(--dust-drift-y, -30px) * 0.5)) scale(0.9);
+    opacity: var(--dust-opacity-peak, 0.1);
+  }
+  75% {
+    transform: translate(calc(var(--dust-drift-x, 20px) * 0.3), calc(var(--dust-drift-y, -30px) * 0.75)) scale(1.05);
+  }
+  100% {
+    transform: translate(0, var(--dust-drift-y, -30px)) scale(1);
+    opacity: var(--dust-opacity-start, 0.05);
+  }
+}
+
+/* Ambient haze breathing */
+@keyframes haze-breathe {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Warm glow pulse */
+@keyframes glow-pulse {
+  0%, 100% {
+    transform: scale(1) translateX(-50%);
+    opacity: 0.06;
+  }
+  50% {
+    transform: scale(1.05) translateX(-50%);
+    opacity: 0.1;
+  }
+}
+
+/* Chromatic aberration effect - apply to parent container */
+.crt-aberration {
+  text-shadow:
+    0.5px 0 0 rgba(255, 0, 0, 0.03),
+    -0.5px 0 0 rgba(0, 255, 255, 0.03);
+}
