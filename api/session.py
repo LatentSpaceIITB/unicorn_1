@@ -18,9 +18,11 @@ from backend.models import GameState
 class SessionStore:
     """In-memory session storage with TTL"""
 
-    def __init__(self, ttl_minutes: int = 60):
+    def __init__(self, ttl_minutes: int = 60, cleanup_interval: int = 50):
         self._sessions: Dict[str, dict] = {}
         self.ttl = timedelta(minutes=ttl_minutes)
+        self._request_count = 0
+        self._cleanup_interval = cleanup_interval
 
     def create(self) -> str:
         """Create new game session, return UUID"""
@@ -34,11 +36,19 @@ class SessionStore:
 
     def get(self, session_id: str) -> Optional[GameState]:
         """Get game state by session ID"""
+        self._maybe_cleanup()
         session = self._sessions.get(session_id)
         if session:
             session["last_activity"] = datetime.now()
             return session["state"]
         return None
+
+    def _maybe_cleanup(self):
+        """Run cleanup every N requests"""
+        self._request_count += 1
+        if self._request_count >= self._cleanup_interval:
+            self._request_count = 0
+            self.cleanup_expired()
 
     def update(self, session_id: str, state: GameState):
         """Update game state"""
