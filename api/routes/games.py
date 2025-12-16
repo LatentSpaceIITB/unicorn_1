@@ -25,6 +25,7 @@ from api.schemas import (
     SilenceResponse,
 )
 from api.session import sessions
+from api.analytics import analytics
 from backend.classifier import Classifier
 from backend.engine import GameEngine
 from backend.narrator import Narrator
@@ -175,6 +176,17 @@ async def process_turn(session_id: str, request: TurnRequest):
             ending_message = msg
             state.game_over = True
             state.game_over_reason = ending
+
+    # Log to analytics if game ended
+    if state.game_over and ending:
+        analytics.log_game(
+            session_id=session_id,
+            ending=ending[0] if ending else "?",  # First char (S, A, B, C, D, F)
+            turns=state.turn,
+            final_vibe=state.vibe,
+            final_trust=state.trust,
+            final_tension=state.tension
+        )
 
     # Save state
     sessions.update(session_id, state)
@@ -360,6 +372,17 @@ async def apply_silence_penalty(session_id: str, request: SilenceRequest):
             ending_message = msg
             state.game_over = True
             state.game_over_reason = ending
+
+    # Log to analytics if game ended
+    if state.game_over and ending:
+        analytics.log_game(
+            session_id=session_id,
+            ending=ending[0] if ending else "F",
+            turns=state.turn,
+            final_vibe=state.vibe,
+            final_trust=state.trust,
+            final_tension=state.tension
+        )
 
     # Save state
     sessions.update(session_id, state)

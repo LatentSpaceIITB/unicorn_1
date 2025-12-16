@@ -18,6 +18,7 @@ load_dotenv()
 
 from api.routes.games import router as games_router
 from api.session import sessions
+from api.analytics import analytics
 
 
 @asynccontextmanager
@@ -25,6 +26,8 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler"""
     # Startup
     print("Starting Read the Room API...")
+    analytics.init_db()
+    print("Analytics database initialized")
     yield
     # Shutdown
     print(f"Shutting down. Active sessions: {sessions.count()}")
@@ -88,6 +91,14 @@ async def health():
         "status": "ok",
         "active_sessions": sessions.count()
     }
+
+
+@app.get("/api/stats")
+async def get_stats():
+    """Get game analytics and statistics"""
+    stats = analytics.get_stats()
+    stats["active_sessions"] = sessions.count()
+    return stats
 
 
 if __name__ == "__main__":
