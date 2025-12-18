@@ -15,6 +15,7 @@ export type SilenceLevel = 'awkward' | 'very_awkward' | 'critical' | 'ghost';
 interface UseTimerOptions {
   onThresholdHit: (level: SilenceLevel) => void;
   enabled?: boolean;
+  isTyping?: boolean;  // Pause timer while user is actively typing
 }
 
 interface UseTimerReturn {
@@ -32,7 +33,7 @@ interface UseTimerReturn {
  * Tracks how long the player has been silent and triggers
  * callbacks when thresholds are crossed.
  */
-export function useTimer({ onThresholdHit, enabled = true }: UseTimerOptions): UseTimerReturn {
+export function useTimer({ onThresholdHit, enabled = true, isTyping = false }: UseTimerOptions): UseTimerReturn {
   const [elapsed, setElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [currentLevel, setCurrentLevel] = useState<SilenceLevel | null>(null);
@@ -68,6 +69,11 @@ export function useTimer({ onThresholdHit, enabled = true }: UseTimerOptions): U
 
     const interval = setInterval(() => {
       setElapsed(prev => {
+        // Pause timer while user is typing (the "Typing Shield")
+        if (isTyping) {
+          return prev;  // Don't increment elapsed time
+        }
+
         const newElapsed = prev + 1000;
 
         // Check thresholds and fire callbacks
@@ -95,7 +101,7 @@ export function useTimer({ onThresholdHit, enabled = true }: UseTimerOptions): U
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, enabled, onThresholdHit]);
+  }, [isRunning, enabled, isTyping, onThresholdHit]);
 
   // Disable timer effect
   useEffect(() => {

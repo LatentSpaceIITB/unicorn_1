@@ -33,6 +33,8 @@ export interface Ending {
   killerQuote: string | null;
 }
 
+const TYPING_SHIELD_MS = 1500;  // Pause timer if user typed within this window
+
 export function useGame() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -49,6 +51,10 @@ export function useGame() {
   const [gameOver, setGameOver] = useState(false);
   const [ending, setEnding] = useState<Ending | null>(null);
   const [initialized, setInitialized] = useState(false);
+
+  // Typing Shield: Track when user last typed to pause timer
+  const [lastKeystrokeTime, setLastKeystrokeTime] = useState(0);
+  const isTyping = Date.now() - lastKeystrokeTime < TYPING_SHIELD_MS;
 
   // Track if we're processing a silence penalty to avoid double-triggers
   const processingPenaltyRef = useRef(false);
@@ -89,10 +95,16 @@ export function useGame() {
     }
   }, [sessionId, gameOver]);
 
-  // Initialize the timer
+  // Notify that user is typing (resets the typing shield timer)
+  const notifyTyping = useCallback(() => {
+    setLastKeystrokeTime(Date.now());
+  }, []);
+
+  // Initialize the timer with typing shield
   const timer = useTimer({
     onThresholdHit: handleSilenceThreshold,
     enabled: initialized && !!sessionId && !gameOver && !loading,
+    isTyping,  // Pause timer while user is actively typing
   });
 
   // Load session from localStorage on mount
@@ -260,11 +272,13 @@ export function useGame() {
     createNewGame,
     submitMessage,
     resetGame,
+    notifyTyping,  // Call when user types to activate typing shield
     // V2: Timer state for UI
     timer: {
       elapsed: timer.elapsed,
       currentLevel: timer.currentLevel,
       isRunning: timer.isRunning,
+      isTyping,  // True when typing shield is active
     },
   };
 }

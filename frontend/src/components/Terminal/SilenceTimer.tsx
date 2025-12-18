@@ -6,6 +6,7 @@ interface SilenceTimerProps {
   elapsed: number;
   currentLevel: SilenceLevel | null;
   isRunning: boolean;
+  isTyping?: boolean;  // True when typing shield is active (timer paused)
 }
 
 /**
@@ -14,7 +15,7 @@ interface SilenceTimerProps {
  * Shows a progress bar that changes color as the player stays silent longer.
  * Color progression: Green → Yellow → Orange → Red
  */
-export function SilenceTimer({ elapsed, currentLevel, isRunning }: SilenceTimerProps) {
+export function SilenceTimer({ elapsed, currentLevel, isRunning, isTyping = false }: SilenceTimerProps) {
   if (!isRunning && elapsed === 0) {
     return null; // Don't show when game hasn't started
   }
@@ -22,8 +23,9 @@ export function SilenceTimer({ elapsed, currentLevel, isRunning }: SilenceTimerP
   const maxTime = SILENCE_THRESHOLDS.GHOST;
   const percentage = Math.min((elapsed / maxTime) * 100, 100);
 
-  // Determine color based on elapsed time
+  // Determine color based on elapsed time (blue when typing shield is active)
   const getColor = () => {
+    if (isTyping) return 'var(--terminal-vibe)'; // Cyan when typing shield active
     if (elapsed >= SILENCE_THRESHOLDS.CRITICAL) return 'var(--color-danger)';
     if (elapsed >= SILENCE_THRESHOLDS.VERY_AWKWARD) return '#ff8c00'; // Orange
     if (elapsed >= SILENCE_THRESHOLDS.AWKWARD) return 'var(--color-trust)'; // Yellow/amber
@@ -32,6 +34,7 @@ export function SilenceTimer({ elapsed, currentLevel, isRunning }: SilenceTimerP
 
   // Get warning message based on level
   const getWarningMessage = () => {
+    if (isTyping) return 'typing...';  // Show when shield is active
     switch (currentLevel) {
       case 'critical':
         return "She's losing interest...";

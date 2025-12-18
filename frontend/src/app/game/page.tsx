@@ -24,6 +24,7 @@ export default function GamePage() {
     createNewGame,
     submitMessage,
     resetGame,
+    notifyTyping,
     timer,
   } = useGame();
 
@@ -200,10 +201,11 @@ export default function GamePage() {
         elapsed={timer.elapsed}
         currentLevel={timer.currentLevel}
         isRunning={timer.isRunning}
+        isTyping={timer.isTyping}
       />
 
       {/* Input Bar */}
-      <InputBar onSubmit={submitMessage} disabled={loading} />
+      <InputBar onSubmit={submitMessage} onTyping={notifyTyping} disabled={loading} />
     </main>
     </>
   );
