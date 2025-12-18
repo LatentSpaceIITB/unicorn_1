@@ -1,9 +1,17 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useRef, useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import { useAudio } from '@/hooks/useAudio';
+import { useDeviceId } from '@/hooks/useDeviceId';
+import {
+  submitScore,
+  isEligibleForLeaderboard,
+  shouldPromptCallsign,
+  SubmitScoreResponse,
+} from '@/lib/leaderboard';
+import { CallsignModal, FullLeaderboard } from '@/components/Leaderboard';
 
 interface ReceiptProps {
   rank: string;
@@ -17,12 +25,62 @@ interface ReceiptProps {
 export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAgain }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const { playEnding, setMusicState } = useAudio();
+  const { deviceId } = useDeviceId();
+
+  // Leaderboard state
+  const [showCallsignModal, setShowCallsignModal] = useState(
+    shouldPromptCallsign(rank)
+  );
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardResult, setLeaderboardResult] = useState<SubmitScoreResponse | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Play ending sound and stop BGM when receipt appears
   useEffect(() => {
     setMusicState('silent'); // Stop background music
     playEnding(rank);
   }, [rank, playEnding, setMusicState]);
+
+  // Auto-submit for D-rank (no callsign prompt)
+  useEffect(() => {
+    if (rank === 'D' && deviceId && isEligibleForLeaderboard(rank) && !leaderboardResult) {
+      submitScore({
+        device_id: deviceId,
+        grade: rank,
+        vibe: stats.vibe,
+        trust: stats.trust,
+        tension: stats.tension,
+        ending_type: ending,
+        turns: turnCount,
+      }).then(setLeaderboardResult).catch(console.error);
+    }
+  }, [rank, deviceId, stats, ending, turnCount, leaderboardResult]);
+
+  // Handle callsign submission
+  const handleCallsignSubmit = async (callsign: string | null) => {
+    if (!deviceId) return;
+
+    setSubmitting(true);
+    setShowCallsignModal(false);
+
+    try {
+      const result = await submitScore({
+        device_id: deviceId,
+        callsign: callsign || undefined,
+        grade: rank,
+        vibe: stats.vibe,
+        trust: stats.trust,
+        tension: stats.tension,
+        ending_type: ending,
+        turns: turnCount,
+      });
+      setLeaderboardResult(result);
+    } catch (error) {
+      console.error('Failed to submit score:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const downloadReceipt = async () => {
     if (!receiptRef.current) return;
@@ -190,7 +248,74 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
         >
           [ TRY AGAIN ]
         </motion.button>
+
+        {/* Leaderboard Result Message */}
+        {leaderboardResult && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full text-center font-mono text-sm"
+            style={{ color: 'var(--terminal-dim)' }}
+          >
+            {leaderboardResult.is_new_record ? (
+              <>
+                <span style={{ color: 'var(--terminal-success)' }}>
+                  New record!
+                </span>{' '}
+                Rank #{leaderboardResult.your_rank} as {leaderboardResult.callsign}
+              </>
+            ) : (
+              leaderboardResult.message
+            )}
+          </motion.div>
+        )}
+
+        {/* Submitting indicator */}
+        {submitting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full text-center font-mono text-sm"
+            style={{ color: 'var(--terminal-dim)' }}
+          >
+            [ SUBMITTING... ]
+          </motion.div>
+        )}
+
+        {/* View Leaderboard Button */}
+        {isEligibleForLeaderboard(rank) && !showCallsignModal && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowLeaderboard(true)}
+            className="w-full px-6 py-3 font-mono border transition-colors"
+            style={{
+              borderColor: 'var(--terminal-dim)',
+              color: 'var(--terminal-dim)',
+              backgroundColor: 'transparent'
+            }}
+          >
+            [ VIEW LEADERBOARD ]
+          </motion.button>
+        )}
       </div>
+
+      {/* Callsign Modal */}
+      <CallsignModal
+        isOpen={showCallsignModal}
+        onSubmit={handleCallsignSubmit}
+        grade={rank}
+      />
+
+      {/* Full Leaderboard */}
+      <AnimatePresence>
+        {showLeaderboard && (
+          <FullLeaderboard onClose={() => setShowLeaderboard(false)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

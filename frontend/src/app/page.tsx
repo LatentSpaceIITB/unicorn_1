@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { TypeWriter } from '@/components/ui/TypeWriter';
 import { createGame } from '@/lib/api';
+import { TopOperatives } from '@/components/Leaderboard';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -105,6 +106,18 @@ export default function LandingPage() {
           >
             Toggle between SAY and ACT modes to navigate your date
           </motion.p>
+        )}
+
+        {/* Top Operatives Leaderboard */}
+        {showButton && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.5 }}
+            className="mt-12 w-full max-w-sm"
+          >
+            <TopOperatives />
+          </motion.div>
         )}
       </div>
     </main>
