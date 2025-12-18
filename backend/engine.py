@@ -43,6 +43,9 @@ from .config import (
     CONTENT_VIOLATION_TRUST,
     CONTENT_VIOLATION_VIBE,
     CONTENT_VIOLATION_FLAGS,
+    # V2.1 Mercy rule
+    MERCY_TURN_THRESHOLD,
+    MERCY_DECENT_STAT_AVG,
 )
 
 
@@ -357,6 +360,60 @@ class GameEngine:
 
         return 0
 
+    # =========================================================================
+    # V2.1: Mercy Rule System
+    # =========================================================================
+
+    def apply_mercy_rule(
+        self, original_ending: EndingType, original_message: str
+    ) -> Tuple[EndingType, str]:
+        """
+        Apply mercy rule for players who've invested effort (survived 7+ turns).
+
+        Downgrades harsh F-rank endings to softer D/C-rank endings.
+        Exceptions: Ghosting (abandoned game), content violations (harassment)
+
+        Returns:
+            (ending_type, message) - either original or mercy-adjusted
+        """
+        # No mercy before turn threshold - must survive early game
+        if self.state.turn < MERCY_TURN_THRESHOLD:
+            return (original_ending, original_message)
+
+        # Never give mercy for ghosting (player abandoned the game)
+        if original_ending == EndingType.F_RANK_GHOSTED:
+            return (original_ending, original_message)
+
+        # Check if this was a content violation (harassment/inappropriate)
+        # These should always result in F-rank regardless of turn
+        # Content violations are tracked in critical events
+        for event in self.state.critical_events:
+            if event.event_type == "content_violation":
+                return (original_ending, original_message)
+
+        # Apply mercy for F_RANK_ICK (trust crash / bad kiss attempt)
+        if original_ending == EndingType.F_RANK_ICK:
+            # Calculate average stats to determine mercy level
+            avg_stat = (self.state.vibe + self.state.trust + self.state.tension) / 3
+
+            if avg_stat >= MERCY_DECENT_STAT_AVG:
+                # Decent effort - give C-rank instead of F
+                return (
+                    EndingType.C_RANK_FADE,
+                    "*She smiles awkwardly, looking at her watch.* 'This was... interesting. "
+                    "I should probably head out.' *She stands up, giving a small wave.* 'Take care.'"
+                )
+            else:
+                # Survived but struggled - give D-rank instead of F
+                return (
+                    EndingType.D_RANK_FRIEND_ZONE,
+                    "*She sighs, fidgeting with her coffee cup.* 'You seem nice, but... "
+                    "I don't think we're quite clicking, you know?' *She gives you a sympathetic pat on the arm.* "
+                    "'Good luck out there.'"
+                )
+
+        return (original_ending, original_message)
+
     def check_kiss_attempt(self, tags: Tags) -> Optional[Tuple[bool, EndingType, str]]:
         """
         Check if user is attempting a kiss and determine outcome
@@ -364,6 +421,9 @@ class GameEngine:
         V2 Updates:
         - C-Rank Fumble for awkward rejections (Trust<60 OR Tension<60)
         - Clear distinction between fumble (recoverable) and ick (game over)
+
+        V2.1 Updates:
+        - Mercy rule: After turn 7, hard rejections become soft rejections
 
         Returns:
             None if not a kiss attempt
@@ -378,7 +438,16 @@ class GameEngine:
 
         # Check if in lockout
         if self.state.lockout_turns > 0:
-            # Hard rejection - tried during lockout
+            # V2.1: Apply mercy for lockout violation after turn threshold
+            if self.state.turn >= MERCY_TURN_THRESHOLD:
+                # Downgrade to fumble instead of ICK
+                return (
+                    False,
+                    EndingType.C_RANK_FUMBLE,
+                    "*She pulls back, frowning.* 'Hey, I said slow down.' "
+                    "*She grabs her things.* 'I think we're done here.'"
+                )
+            # Hard rejection - tried during lockout (early game)
             return (
                 False,
                 EndingType.F_RANK_ICK,
@@ -387,6 +456,15 @@ class GameEngine:
 
         # Hard Rejection: Trust WAY too low (creepy)
         if self.state.trust < KISS_HARD_REJECT_TRUST:
+            # V2.1: Apply mercy after turn threshold
+            if self.state.turn >= MERCY_TURN_THRESHOLD:
+                # Downgrade to fumble instead of ICK
+                return (
+                    False,
+                    EndingType.C_RANK_FUMBLE,
+                    "*She leans back, eyes wide.* 'Whoa, okay... that's a bit fast for me.' "
+                    "*She stands up awkwardly.* 'I should go. It was nice meeting you.'"
+                )
             return (
                 False,
                 EndingType.F_RANK_ICK,
@@ -431,6 +509,9 @@ class GameEngine:
         - D-Rank Friendzone: High trust, low tension (played it too safe)
         - Strike system check (recovery mode failure handled elsewhere)
 
+        V2.1 Updates:
+        - Mercy rule: After turn 7, trust crashes give softer endings
+
         Returns:
             (ending_type, message) if game over, None otherwise
         """
@@ -440,10 +521,10 @@ class GameEngine:
 
         # Ick triggered (trust crashed hard)
         if self.state.trust <= 0:
-            return (
-                EndingType.F_RANK_ICK,
-                "She checks her phone. 'I just remembered I have to... go. Like, now.' She leaves without looking back."
-            )
+            original_ending = EndingType.F_RANK_ICK
+            original_message = "She checks her phone. 'I just remembered I have to... go. Like, now.' She leaves without looking back."
+            # V2.1: Apply mercy rule - may downgrade to D or C rank
+            return self.apply_mercy_rule(original_ending, original_message)
 
         # The Fade (vibe hit zero)
         if self.state.vibe <= 0:

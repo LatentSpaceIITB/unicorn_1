@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CallsignModalProps {
   isOpen: boolean;
   onSubmit: (callsign: string | null) => void;
-  grade: string;
+  onClose?: () => void;
+  grade?: string;
+  mode?: 'create' | 'edit';
+  currentCallsign?: string;
 }
 
 const gradeColors: Record<string, string> = {
@@ -19,10 +22,21 @@ const gradeColors: Record<string, string> = {
 export function CallsignModal({
   isOpen,
   onSubmit,
-  grade,
+  onClose,
+  grade = 'C',
+  mode = 'create',
+  currentCallsign = '',
 }: CallsignModalProps) {
-  const [callsign, setCallsign] = useState('');
+  const [callsign, setCallsign] = useState(currentCallsign);
   const [error, setError] = useState<string | null>(null);
+
+  // Reset callsign when modal opens/closes or currentCallsign changes
+  useEffect(() => {
+    if (isOpen) {
+      setCallsign(currentCallsign);
+      setError(null);
+    }
+  }, [isOpen, currentCallsign]);
 
   const handleSubmit = () => {
     if (callsign.trim()) {
@@ -39,7 +53,11 @@ export function CallsignModal({
   };
 
   const handleSkip = () => {
-    onSubmit(null);
+    if (mode === 'edit' && onClose) {
+      onClose();
+    } else {
+      onSubmit(null);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,21 +93,25 @@ export function CallsignModal({
               className="text-center text-xs tracking-widest mb-4"
               style={{ color: gradeColor }}
             >
-              [ MISSION COMPLETE ]
+              {mode === 'edit' ? '[ EDIT CALLSIGN ]' : '[ MISSION COMPLETE ]'}
             </div>
 
-            <div
-              className="text-center text-5xl font-bold mb-2"
-              style={{ color: gradeColor }}
-            >
-              {grade}
-            </div>
+            {mode === 'create' && (
+              <div
+                className="text-center text-5xl font-bold mb-2"
+                style={{ color: gradeColor }}
+              >
+                {grade}
+              </div>
+            )}
 
             <div
               className="text-center text-sm mb-6"
               style={{ color: 'var(--terminal-text)' }}
             >
-              You&apos;ve earned a spot on the leaderboard.
+              {mode === 'edit'
+                ? 'Update your operative callsign.'
+                : "You've earned a spot on the leaderboard."}
             </div>
 
             {/* Input */}
@@ -140,7 +162,7 @@ export function CallsignModal({
                   backgroundColor: 'transparent',
                 }}
               >
-                [ SKIP ]
+                {mode === 'edit' ? '[ CANCEL ]' : '[ SKIP ]'}
               </button>
               <button
                 onClick={handleSubmit}
@@ -151,16 +173,18 @@ export function CallsignModal({
                   backgroundColor: 'transparent',
                 }}
               >
-                [ CONFIRM ]
+                {mode === 'edit' ? '[ SAVE ]' : '[ CONFIRM ]'}
               </button>
             </div>
 
-            <div
-              className="text-xs text-center mt-4"
-              style={{ color: 'var(--terminal-dim)' }}
-            >
-              Skip to auto-assign a callsign
-            </div>
+            {mode === 'create' && (
+              <div
+                className="text-xs text-center mt-4"
+                style={{ color: 'var(--terminal-dim)' }}
+              >
+                Skip to auto-assign a callsign
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

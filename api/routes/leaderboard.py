@@ -76,6 +76,26 @@ class SubmitScoreResponse(BaseModel):
     is_new_record: bool = False
 
 
+class UpdateCallsignRequest(BaseModel):
+    """Request to update callsign"""
+    device_id: str = Field(..., min_length=1, max_length=64)
+    new_callsign: str = Field(..., min_length=1, max_length=8)
+
+    @field_validator('new_callsign')
+    @classmethod
+    def validate_new_callsign(cls, v):
+        if not re.match(r'^[A-Za-z0-9_-]{1,8}$', v):
+            raise ValueError('Callsign must be alphanumeric (with _ or -) and max 8 characters')
+        return v.upper()
+
+
+class UpdateCallsignResponse(BaseModel):
+    """Response after updating callsign"""
+    success: bool
+    message: str
+    callsign: str
+
+
 # ============================================================================
 # Helper Functions
 # ============================================================================
@@ -258,3 +278,35 @@ async def get_player_rank(device_id: str):
     except Exception as e:
         print(f"Get rank error: {e}")
         return {"on_leaderboard": False}
+
+
+@router.patch("/callsign", response_model=UpdateCallsignResponse)
+async def update_callsign(request: UpdateCallsignRequest):
+    """
+    Update a player's callsign.
+    Requires device_id for authentication.
+    """
+    try:
+        from api.supabase_client import supabase_client
+
+        success = supabase_client.update_callsign(
+            device_id=request.device_id,
+            new_callsign=request.new_callsign
+        )
+
+        if not success:
+            return UpdateCallsignResponse(
+                success=False,
+                message="Player not found on leaderboard.",
+                callsign=""
+            )
+
+        return UpdateCallsignResponse(
+            success=True,
+            message="Callsign updated successfully.",
+            callsign=request.new_callsign
+        )
+
+    except Exception as e:
+        print(f"Update callsign error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update callsign")

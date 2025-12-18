@@ -7,6 +7,7 @@ interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
   showScore?: boolean;
   compact?: boolean;
+  onEditCallsign?: () => void;
 }
 
 const gradeColors: Record<string, string> = {
@@ -21,6 +22,7 @@ export function LeaderboardTable({
   entries,
   showScore = true,
   compact = false,
+  onEditCallsign,
 }: LeaderboardTableProps) {
   if (entries.length === 0) {
     return (
@@ -105,7 +107,7 @@ export function LeaderboardTable({
 
               {/* Callsign */}
               <span
-                className="flex-1 truncate"
+                className="flex-1 truncate flex items-center gap-1"
                 style={{
                   color: isHighlighted
                     ? 'var(--terminal-tension)'
@@ -114,12 +116,27 @@ export function LeaderboardTable({
               >
                 {entry.callsign}
                 {entry.is_you && (
-                  <span
-                    className="ml-1 text-xs"
-                    style={{ color: 'var(--terminal-tension)' }}
-                  >
-                    (YOU)
-                  </span>
+                  <>
+                    <span
+                      className="text-xs"
+                      style={{ color: 'var(--terminal-tension)' }}
+                    >
+                      (YOU)
+                    </span>
+                    {onEditCallsign && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditCallsign();
+                        }}
+                        className="text-xs px-1 hover:opacity-70 transition-opacity"
+                        style={{ color: 'var(--terminal-dim)' }}
+                        title="Edit callsign"
+                      >
+                        [EDIT]
+                      </button>
+                    )}
+                  </>
                 )}
               </span>
 

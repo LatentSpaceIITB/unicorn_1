@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   getFullLeaderboard,
+  updateCallsign,
   FullLeaderboardResponse,
 } from '@/lib/leaderboard';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { LeaderboardTable } from './LeaderboardTable';
+import { CallsignModal } from './CallsignModal';
 
 interface FullLeaderboardProps {
   onClose: () => void;
@@ -17,18 +19,57 @@ export function FullLeaderboard({ onClose }: FullLeaderboardProps) {
   const { deviceId } = useDeviceId();
   const [data, setData] = useState<FullLeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [currentCallsign, setCurrentCallsign] = useState('');
+
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const result = deviceId
+        ? await getFullLeaderboard(deviceId)
+        : await getFullLeaderboard();
+      setData(result);
+
+      // Find current user's callsign
+      const userEntry = result.entries.find((e) => e.is_you);
+      if (userEntry) {
+        setCurrentCallsign(userEntry.callsign);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (deviceId) {
-      getFullLeaderboard(deviceId)
-        .then(setData)
-        .finally(() => setLoading(false));
-    } else {
-      getFullLeaderboard()
-        .then(setData)
-        .finally(() => setLoading(false));
-    }
+    fetchLeaderboard();
   }, [deviceId]);
+
+  const handleEditCallsign = () => {
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (newCallsign: string | null) => {
+    if (!newCallsign || !deviceId) {
+      setShowEditModal(false);
+      return;
+    }
+
+    try {
+      const result = await updateCallsign({
+        device_id: deviceId,
+        new_callsign: newCallsign,
+      });
+
+      if (result.success) {
+        // Refresh the leaderboard
+        await fetchLeaderboard();
+      }
+    } catch (error) {
+      console.error('Failed to update callsign:', error);
+    }
+
+    setShowEditModal(false);
+  };
 
   return (
     <motion.div
@@ -104,6 +145,7 @@ export function FullLeaderboard({ onClose }: FullLeaderboardProps) {
               <LeaderboardTable
                 entries={data.entries}
                 showScore
+                onEditCallsign={handleEditCallsign}
               />
             ) : (
               <div
@@ -116,6 +158,15 @@ export function FullLeaderboard({ onClose }: FullLeaderboardProps) {
           </div>
         </div>
       </div>
+
+      {/* Edit Callsign Modal */}
+      <CallsignModal
+        isOpen={showEditModal}
+        onSubmit={handleEditSubmit}
+        onClose={() => setShowEditModal(false)}
+        mode="edit"
+        currentCallsign={currentCallsign}
+      />
     </motion.div>
   );
 }

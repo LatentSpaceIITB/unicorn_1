@@ -147,3 +147,12 @@ SILENCE_CRITICAL_TRUST = -10
 CONTENT_VIOLATION_TRUST = -50
 CONTENT_VIOLATION_VIBE = -30
 CONTENT_VIOLATION_FLAGS = ["inappropriate_sexual", "profanity_heavy", "harassment"]
+
+# =============================================================================
+# V2.1 ADDITIONS: Mercy Rule System
+# =============================================================================
+# Players who survive past the early game get softer endings instead of F-rank
+# Keeps F-rank for: ghosting, harassment, and very early failures
+
+MERCY_TURN_THRESHOLD = 7      # After this turn, mercy rules apply
+MERCY_DECENT_STAT_AVG = 35    # Average stat needed for C-rank mercy (vs D-rank)

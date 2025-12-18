@@ -43,6 +43,17 @@ export interface SubmitScoreResponse {
   is_new_record: boolean;
 }
 
+export interface UpdateCallsignRequest {
+  device_id: string;
+  new_callsign: string;
+}
+
+export interface UpdateCallsignResponse {
+  success: boolean;
+  message: string;
+  callsign: string;
+}
+
 /**
  * Get top 5 operatives for landing page
  */
@@ -90,6 +101,23 @@ export async function submitScore(
   });
   if (!res.ok) {
     throw new Error('Failed to submit score');
+  }
+  return res.json();
+}
+
+/**
+ * Update a player's callsign
+ */
+export async function updateCallsign(
+  request: UpdateCallsignRequest
+): Promise<UpdateCallsignResponse> {
+  const res = await fetch(`${API_BASE}/api/leaderboard/callsign`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) {
+    throw new Error('Failed to update callsign');
   }
   return res.json();
 }

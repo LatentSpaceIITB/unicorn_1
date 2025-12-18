@@ -141,6 +141,24 @@ class SupabaseClient:
 
         return result.data[0] if result.data else None
 
+    def update_callsign(self, device_id: str, new_callsign: str) -> bool:
+        """
+        Update a player's callsign.
+        Returns True if updated, False if player not found.
+        """
+        # Check if player exists
+        existing = self.get_player_entry(device_id)
+        if not existing:
+            return False
+
+        # Update callsign
+        self.client.table('leaderboard').update({
+            'callsign': new_callsign,
+            'updated_at': 'now()'
+        }).eq('device_id', device_id).execute()
+
+        return True
+
 
 # Global instance
 supabase_client = SupabaseClient()

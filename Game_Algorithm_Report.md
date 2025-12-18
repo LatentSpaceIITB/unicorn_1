@@ -190,17 +190,69 @@ Higher stats are harder to increase:
 | **Chemistry Bonus** | Vibe > 70 AND trust_delta > 0 | +5 Trust |
 | **Validation Kills Tension** | Validate intent | Tension capped at -10 |
 
+### Step 7: Content Violation Check
+
+The game detects inappropriate content and applies severe penalties:
+
+**Triggers:**
+- `inappropriate_sexual` flag
+- `harassment` flag
+- `vulgar` flag
+
+**Penalties:**
+- Trust: -50 (immediate danger zone)
+- Vibe: -30
+- Tension: Reset to 0
+- Critical event logged
+
+This prevents players from harassing the AI character and teaches appropriate social behavior.
+
 ---
 
-## 6. Act System
+## 5b. Recovery Mode
 
-### Three-Act Structure
+When a stat reaches 0, the game gives players one chance to recover instead of instant game-over.
 
-| Act | Turns | Location | Stat Cap |
-|-----|-------|----------|----------|
-| 1 | 0-7 | Coffee Shop | 50 |
-| 2 | 8-15 | Walk | 80 |
-| 3 | 16-20 | Doorstep | None |
+### How It Works
+1. Stat drops to 0 → Freezes at 1 instead
+2. Recovery mode activates for that stat
+3. Player must respond with `Safe` or `Unique` modifier
+4. Success: Exit recovery, continue playing
+5. Failure: Game over with appropriate ending
+
+### Recovery Requirements
+
+| Stat | Recovery Condition | Failure Ending |
+|------|-------------------|----------------|
+| Vibe | Next response is Safe or Unique | C-Rank (THE FADE) |
+| Trust | Next response is Safe or Unique | F-Rank (THE ICK) |
+
+### Design Purpose
+- Prevents frustrating instant deaths
+- Teaches players what went wrong
+- Creates dramatic "last chance" moments
+
+---
+
+## 6. Act & Phase System
+
+### Three-Act Structure (Narrative)
+
+| Act | Turns | Location | Description |
+|-----|-------|----------|-------------|
+| 1 | 1-7 | Coffee Shop | First impressions |
+| 2 | 8-15 | Walk | Getting to know each other |
+| 3 | 16-20 | Doorstep | Critical moment |
+
+### Phase System (Stat Caps)
+
+The game uses a turn-based phase system that caps stats to prevent speed-running:
+
+| Phase | Turns | All Stats Cap | Tension Cap | Purpose |
+|-------|-------|---------------|-------------|---------|
+| **ICEBREAKER** | 1-5 | 50 | 40 | Force slow build |
+| **DEEP_DIVE** | 6-15 | 80 | 70 | Allow progression |
+| **THE_CLOSE** | 16-20 | None | None | All caps removed |
 
 ### Chloe's Behavior by Act
 
@@ -240,27 +292,27 @@ After 2+ consecutive low-effort responses:
 
 ## 8. Silence Mechanic
 
-A real-time patience timer creating time pressure.
+A real-time patience timer creating time pressure. Fixed 60-second window with escalating penalties.
 
-### Timer Duration (Vibe-Scaled)
-| Vibe | Time Limit |
-|------|------------|
-| > 80 | 60 seconds |
-| 50-80 | 45 seconds |
-| 30-50 | 35 seconds |
-| < 30 | 25 seconds |
+### Silence Thresholds
 
-### Warning Phase
-At 25% time remaining:
-- Visual: Red vignette intensifies
-- Haptic: Warning vibration
-- Text: "The silence grows..."
+| Threshold | Time | Vibe | Trust | Message |
+|-----------|------|------|-------|---------|
+| **AWKWARD** | 15s | -5 | 0 | *"She shifts in her seat..."* |
+| **VERY_AWKWARD** | 30s | -10 | -5 | *"Is everything okay?"* |
+| **CRITICAL** | 45s | -15 | -10 | *"She picks up her phone..."* |
+| **GHOST** | 60s | Game Over | F-Rank | *"She gathers her things and leaves"* |
 
-### Timeout Penalty
-- Awkward comment from Chloe
-- Strike added (max 2 before game over)
-- -15 Vibe, -5 Trust
-- Timer resets
+### Typing Shield
+The timer **pauses** while the player is actively typing:
+- 1.5 second grace period after each keystroke
+- Prevents accidental timeouts while composing responses
+- Timer resumes after typing stops
+
+### Visual Feedback
+- Progress bar changes color: Green → Yellow → Orange → Red
+- Warning messages appear at each threshold
+- Timer resets after each message submission
 
 ---
 
@@ -333,11 +385,14 @@ Kiss Attempt
 
 | Rank | Name | Condition | Outcome |
 |------|------|-----------|---------|
-| **S** | THE KISS | Kiss success (Trust≥70, Vibe≥60, Tension≥80) | Victory |
+| **S** | THE KISS | Kiss success (Trust≥70, Vibe≥60, Tension≥80) | Victory - she kisses back |
+| **A** | THE GENTLEMAN | Turn 20, Trust≥85, Vibe≥80, Tension<70 | High connection, no escalation - "When can I see you again?" |
 | **B** | THE NUMBER | Turn 20, Tension≥50, no kiss | She gives number |
-| **D** | FRIEND ZONE | Turn 20, Tension<50 OR soft kiss rejection | "As friends?" |
+| **C** | THE FUMBLE | Kiss attempt with Trust<60 OR Tension<60 (but Trust≥60) | Awkward rejection, can recover - 5 turn lockout |
 | **C** | THE FADE | Vibe ≤ 0 | She got bored |
-| **F** | THE ICK | Trust ≤ 0 OR hard rejection | She leaves |
+| **D** | FRIEND ZONE | Turn 20, Tension<50 | "As friends?" |
+| **F** | THE ICK | Trust ≤ 0 | She leaves - creep vibes |
+| **F** | GHOSTED | Silence timer expires (60s) | She leaves - you took too long |
 
 ---
 
@@ -420,19 +475,74 @@ TENSION THRESHOLDS:
   Spark:        50    (Chemistry building)
   Kiss Ready:   80    (Can attempt kiss)
 
-KISS REQUIREMENTS:
+KISS REQUIREMENTS (S-Rank):
   Trust:        70    Vibe:    60    Tension:  80
 
-HARD REJECTION:
-  Trust below:  60
+A-RANK GENTLEMAN:
+  Trust:        85    Vibe:    80    Tension:  <70
 
-SOFT REJECTION:
-  Vibe below:   40
+C-RANK FUMBLE:
+  Trust:        <60   OR Tension: <60 (but Trust ≥60)
 
-ACT CAPS:
-  Act 1: 50     Act 2: 80     Act 3: None
+PHASE CAPS:
+  Icebreaker (1-5):   Stats: 50    Tension: 40
+  Deep Dive (6-15):   Stats: 80    Tension: 70
+  The Close (16-20):  No caps
+
+SILENCE TIMER:
+  Awkward:      15s   Very Awkward: 30s
+  Critical:     45s   Ghost (Game Over): 60s
+
+CONTENT VIOLATION PENALTIES:
+  Trust: -50    Vibe: -30    Tension: Reset
+
+MERCY RULE (V2.2):
+  Turn Threshold: 7   (After this turn, mercy applies)
+  Decent Stat Avg: 35 (For C-rank vs D-rank mercy)
 ```
 
 ---
 
-*Algorithm documentation for Read the Room v2*
+## 15. Mercy Rule System (V2.2)
+
+Players who survive 7+ turns receive softer endings instead of F-rank. This rewards effort and prevents frustrating sudden deaths after significant investment.
+
+### How It Works
+
+| Original Ending | After Turn 7+ | Condition |
+|-----------------|---------------|-----------|
+| F_RANK_ICK (trust crash) | D_RANK_FRIEND_ZONE | Survived 7+ turns |
+| F_RANK_ICK (trust crash) | C_RANK_FADE | Survived 7+ turns + avg stats ≥ 35 |
+| F_RANK_ICK (bad kiss) | C_RANK_FUMBLE | Survived 7+ turns |
+| Kiss during lockout | C_RANK_FUMBLE | Survived 7+ turns |
+
+### Exceptions (No Mercy)
+
+These scenarios always result in F-rank regardless of turn:
+
+| Scenario | Reason |
+|----------|--------|
+| **F_RANK_GHOSTED** | Player abandoned the game (60s silence) |
+| **Content Violations** | Harassment or inappropriate behavior detected |
+| **Before Turn 7** | Must survive the early game to earn mercy |
+
+### Design Philosophy
+
+- **Rewards Effort**: Players who engage meaningfully shouldn't feel punished for one mistake
+- **Maintains Challenge**: Early game still requires skill; harassment never rewarded
+- **Better UX**: Softer endings feel fair after 7+ turns of conversation
+- **Leaderboard Friendly**: More players get D/C rank = more leaderboard entries
+
+### Mercy Messages
+
+When mercy is applied, Chloe's response acknowledges the effort but indicates lack of chemistry:
+
+**D-Rank (mercy):**
+> *She sighs, fidgeting with her coffee cup.* "You seem nice, but... I don't think we're quite clicking, you know?"
+
+**C-Rank (mercy):**
+> *She smiles awkwardly, looking at her watch.* "This was... interesting. I should probably head out."
+
+---
+
+*Algorithm documentation for Read the Room v2.2*
