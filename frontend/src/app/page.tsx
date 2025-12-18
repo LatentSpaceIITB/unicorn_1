@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { TypeWriter } from '@/components/ui/TypeWriter';
 import { createGame } from '@/lib/api';
 import { TopOperatives } from '@/components/Leaderboard';
+import { useDeviceId } from '@/hooks/useDeviceId';
 
 export default function LandingPage() {
   const router = useRouter();
+  const { deviceId } = useDeviceId();
   const [loading, setLoading] = useState(false);
   const [showSubtitle, setShowSubtitle] = useState(false);
   const [showButton, setShowButton] = useState(false);
@@ -16,7 +19,7 @@ export default function LandingPage() {
   const handleStart = async () => {
     setLoading(true);
     try {
-      const { session_id } = await createGame();
+      const { session_id } = await createGame(deviceId || undefined);
       localStorage.setItem('session_id', session_id);
       router.push('/game');
     } catch (error) {
@@ -50,7 +53,7 @@ export default function LandingPage() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-lg font-mono mb-12"
+            className="text-lg font-mono mb-8"
             style={{ color: 'var(--terminal-dim)' }}
           >
             <TypeWriter
@@ -59,6 +62,21 @@ export default function LandingPage() {
               onComplete={() => setShowButton(true)}
             />
           </motion.p>
+        )}
+
+        {/* Marketing Copy */}
+        {showButton && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8 font-mono text-sm space-y-1"
+            style={{ color: 'var(--terminal-dim)' }}
+          >
+            <p>Practice before your actual date</p>
+            <p>Share on Bumble to flex your skills</p>
+            <p style={{ color: 'var(--terminal-trust)' }}>Get a certificate to prove it</p>
+          </motion.div>
         )}
 
         {/* Start Button */}
@@ -117,6 +135,28 @@ export default function LandingPage() {
             className="mt-12 w-full max-w-sm"
           >
             <TopOperatives />
+          </motion.div>
+        )}
+
+        {/* View Full Leaderboard Button */}
+        {showButton && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2 }}
+            className="mt-6"
+          >
+            <Link
+              href="/leaderboard"
+              className="font-mono text-xs px-4 py-2 border hover:opacity-70 transition-opacity inline-block"
+              style={{
+                borderColor: 'var(--terminal-dim)',
+                color: 'var(--terminal-dim)',
+                backgroundColor: 'transparent',
+              }}
+            >
+              [ VIEW FULL LOG ]
+            </Link>
           </motion.div>
         )}
       </div>
