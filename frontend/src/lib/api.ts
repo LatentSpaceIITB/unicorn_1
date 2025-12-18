@@ -71,9 +71,11 @@ export interface GameStateResponse {
 /**
  * Create a new game session
  */
-export async function createGame(): Promise<CreateGameResponse> {
+export async function createGame(deviceId?: string): Promise<CreateGameResponse> {
   const res = await fetch(`${API_BASE}/api/games/`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device_id: deviceId }),
   });
   if (!res.ok) {
     throw new Error('Failed to create game');
@@ -98,14 +100,16 @@ export async function getGameState(sessionId: string): Promise<GameStateResponse
 export async function submitTurn(
   sessionId: string,
   userInput: string,
-  inputMode: 'dialogue' | 'action'
+  inputMode: 'dialogue' | 'action',
+  deviceId?: string
 ): Promise<TurnResponse> {
   const res = await fetch(`${API_BASE}/api/games/${sessionId}/turn`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       user_input: userInput,
-      input_mode: inputMode
+      input_mode: inputMode,
+      device_id: deviceId
     }),
   });
   if (!res.ok) {
@@ -153,12 +157,13 @@ export interface SilenceResponse {
  */
 export async function applySilencePenalty(
   sessionId: string,
-  level: 'awkward' | 'very_awkward' | 'critical' | 'ghost'
+  level: 'awkward' | 'very_awkward' | 'critical' | 'ghost',
+  deviceId?: string
 ): Promise<SilenceResponse> {
   const res = await fetch(`${API_BASE}/api/games/${sessionId}/silence`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ level }),
+    body: JSON.stringify({ level, device_id: deviceId }),
   });
   if (!res.ok) {
     const error = await res.json();

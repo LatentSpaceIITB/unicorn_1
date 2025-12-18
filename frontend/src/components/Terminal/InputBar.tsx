@@ -9,10 +9,11 @@ type InputMode = 'dialogue' | 'action';
 interface InputBarProps {
   onSubmit: (text: string, mode: InputMode) => void;
   onTyping?: () => void;
+  onFocus?: () => void;
   disabled?: boolean;
 }
 
-export function InputBar({ onSubmit, onTyping, disabled }: InputBarProps) {
+export function InputBar({ onSubmit, onTyping, onFocus, disabled }: InputBarProps) {
   const [text, setText] = useState('');
   const [mode, setMode] = useState<InputMode>('dialogue');
   const { playSend } = useAudio();
@@ -90,6 +91,7 @@ export function InputBar({ onSubmit, onTyping, disabled }: InputBarProps) {
             onTyping?.();
           }}
           onKeyDown={handleKeyDown}
+          onFocus={() => onFocus?.()}
           disabled={disabled}
           placeholder={mode === 'dialogue' ? 'Say something...' : 'Do something...'}
           className="flex-1 py-3 sm:py-2 bg-transparent font-mono text-base sm:text-sm"

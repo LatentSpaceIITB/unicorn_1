@@ -10,6 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from api.schemas import (
+    CreateGameRequest,
     CreateGameResponse,
     TurnRequest,
     TurnResponse,
@@ -42,10 +43,23 @@ intuition_gen = IntuitionGenerator()
 breakdown_gen = BreakdownGenerator()
 
 
+from typing import Optional
+
 @router.post("/", response_model=CreateGameResponse)
-async def create_game():
+async def create_game(request: Optional[CreateGameRequest] = None):
     """Create a new game session"""
     session_id = sessions.create()
+
+    # Log funnel event: game_start
+    device_id = request.device_id if request else None
+    if device_id:
+        analytics.log_funnel_event(
+            device_id=device_id,
+            session_id=session_id,
+            event_type="game_start",
+            turn_number=0
+        )
+
     return CreateGameResponse(
         session_id=session_id,
         message="Game created. Good luck."
@@ -167,6 +181,15 @@ async def process_turn(session_id: str, request: TurnRequest):
     engine.process_lockout()
     engine.advance_act()
 
+    # Log funnel milestone events (turn 5 and 15)
+    if state.turn in [5, 15] and request.device_id:
+        analytics.log_funnel_event(
+            device_id=request.device_id,
+            session_id=session_id,
+            event_type=f"reached_turn_{state.turn}",
+            turn_number=state.turn
+        )
+
     # Check game over (if not already from kiss)
     if not state.game_over:
         game_over_result = engine.check_game_over()
@@ -187,6 +210,15 @@ async def process_turn(session_id: str, request: TurnRequest):
             final_trust=state.trust,
             final_tension=state.tension
         )
+        # Log funnel event: game_over
+        if request.device_id:
+            analytics.log_funnel_event(
+                device_id=request.device_id,
+                session_id=session_id,
+                event_type="game_over",
+                turn_number=state.turn,
+                ending_rank=ending[0] if ending else "F"
+            )
 
     # Save state
     sessions.update(session_id, state)
@@ -383,6 +415,15 @@ async def apply_silence_penalty(session_id: str, request: SilenceRequest):
             final_trust=state.trust,
             final_tension=state.tension
         )
+        # Log funnel event: game_over (via silence/ghost)
+        if request.device_id:
+            analytics.log_funnel_event(
+                device_id=request.device_id,
+                session_id=session_id,
+                event_type="game_over",
+                turn_number=state.turn,
+                ending_rank=ending[0] if ending else "F"
+            )
 
     # Save state
     sessions.update(session_id, state)

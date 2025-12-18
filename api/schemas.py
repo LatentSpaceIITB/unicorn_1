@@ -6,6 +6,11 @@ from pydantic import BaseModel
 from typing import Optional, List, Any
 
 
+class CreateGameRequest(BaseModel):
+    """Request for game creation (optional)"""
+    device_id: Optional[str] = None
+
+
 class CreateGameResponse(BaseModel):
     """Response for game creation"""
     session_id: str
@@ -16,6 +21,7 @@ class TurnRequest(BaseModel):
     """Request for processing a turn"""
     user_input: str
     input_mode: str = "dialogue"  # "dialogue" or "action"
+    device_id: Optional[str] = None  # For funnel tracking
 
 
 class StatChanges(BaseModel):
@@ -108,6 +114,7 @@ class ErrorResponse(BaseModel):
 class SilenceRequest(BaseModel):
     """Request for silence penalty"""
     level: str  # "awkward", "very_awkward", "critical", "ghost"
+    device_id: Optional[str] = None  # For funnel tracking
 
 
 class SilenceResponse(BaseModel):

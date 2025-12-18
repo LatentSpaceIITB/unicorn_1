@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '@/hooks/useGame';
 import { useAudio } from '@/hooks/useAudio';
@@ -31,6 +31,14 @@ export default function GamePage() {
   const { setMusicState, playStatChange, playTensionPing, playWarning } = useAudio();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevStatsRef = useRef(stats);
+
+  // Scroll to bottom - used for new messages and input focus (mobile keyboard)
+  const scrollToBottom = useCallback(() => {
+    // Small delay to let mobile keyboard animation start
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, []);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -205,7 +213,7 @@ export default function GamePage() {
       />
 
       {/* Input Bar */}
-      <InputBar onSubmit={submitMessage} onTyping={notifyTyping} disabled={loading} />
+      <InputBar onSubmit={submitMessage} onTyping={notifyTyping} onFocus={scrollToBottom} disabled={loading} />
     </main>
     </>
   );

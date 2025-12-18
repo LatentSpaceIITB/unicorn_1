@@ -103,6 +103,26 @@ async def get_stats():
     return stats
 
 
+@app.get("/api/funnel")
+async def get_funnel_stats(days: int = 7):
+    """
+    Get funnel analytics and conversion rates.
+
+    Tracks user progression through:
+    - game_start: Player created a game
+    - reached_turn_5: Survived early game (The Hook)
+    - reached_turn_15: Committed player (The Slog)
+    - game_over: Finished the game
+
+    Args:
+        days: Number of days to analyze (default: 7)
+
+    Returns:
+        Funnel counts, conversion rates, rank distribution, and drop-off analysis
+    """
+    return analytics.get_funnel_stats(days)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from '@/lib/api';
 import { useTimer, SilenceLevel } from './useTimer';
+import { useDeviceId } from './useDeviceId';
 
 export interface Message {
   id: string;
@@ -36,6 +37,9 @@ export interface Ending {
 const TYPING_SHIELD_MS = 1500;  // Pause timer if user typed within this window
 
 export function useGame() {
+  // Device ID for funnel analytics tracking
+  const { deviceId } = useDeviceId();
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -66,7 +70,7 @@ export function useGame() {
     processingPenaltyRef.current = true;
 
     try {
-      const result = await api.applySilencePenalty(sessionId, level);
+      const result = await api.applySilencePenalty(sessionId, level, deviceId || undefined);
 
       // Add Chloe's silence response as a message
       setMessages(prev => [...prev, {
@@ -93,7 +97,7 @@ export function useGame() {
     } finally {
       processingPenaltyRef.current = false;
     }
-  }, [sessionId, gameOver]);
+  }, [sessionId, gameOver, deviceId]);
 
   // Notify that user is typing (resets the typing shield timer)
   const notifyTyping = useCallback(() => {
@@ -147,7 +151,7 @@ export function useGame() {
   const createNewGame = useCallback(async () => {
     try {
       setLoading(true);
-      const { session_id } = await api.createGame();
+      const { session_id } = await api.createGame(deviceId || undefined);
       localStorage.setItem('session_id', session_id);
       setSessionId(session_id);
       setMessages([]);
@@ -159,7 +163,7 @@ export function useGame() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [deviceId]);
 
   // Submit a message
   const submitMessage = useCallback(async (text: string, mode: 'dialogue' | 'action') => {
@@ -179,7 +183,7 @@ export function useGame() {
     }]);
 
     try {
-      const result = await api.submitTurn(sessionId, text, mode);
+      const result = await api.submitTurn(sessionId, text, mode, deviceId || undefined);
 
       // Add Chloe's response
       setMessages(prev => [...prev, {
@@ -240,7 +244,7 @@ export function useGame() {
         timer.reset();
       }
     }
-  }, [sessionId, loading, gameOver, timer]);
+  }, [sessionId, loading, gameOver, timer, deviceId]);
 
   // Reset game
   const resetGame = useCallback(async () => {
