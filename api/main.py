@@ -18,6 +18,7 @@ load_dotenv()
 
 from api.routes.games import router as games_router
 from api.routes.leaderboard import router as leaderboard_router
+from api.routes.wingman import router as wingman_router
 from api.session import sessions
 from api.analytics import analytics
 
@@ -66,6 +67,7 @@ app.add_middleware(
 # Include routes
 app.include_router(games_router)
 app.include_router(leaderboard_router)
+app.include_router(wingman_router)
 
 
 @app.get("/")

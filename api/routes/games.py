@@ -27,6 +27,7 @@ from api.schemas import (
 )
 from api.session import sessions
 from api.analytics import analytics
+from api.wingman_manager import wingman_manager
 from backend.classifier import Classifier
 from backend.engine import GameEngine
 from backend.narrator import Narrator
@@ -222,6 +223,28 @@ async def process_turn(session_id: str, request: TurnRequest):
 
     # Save state
     sessions.update(session_id, state)
+
+    # Broadcast to wingman if in co-op mode
+    try:
+        if wingman_manager.is_wingman_room(session_id):
+            room = wingman_manager.get_room_by_session(session_id)
+            if room:
+                wingman_manager.broadcast_turn_update(
+                    room_code=room['room_code'],
+                    turn_number=state.turn,
+                    player_input=user_input,
+                    chloe_response=chloe_response,
+                    stats={
+                        'vibe': state.vibe,
+                        'trust': state.trust,
+                        'tension': state.tension
+                    },
+                    game_over=state.game_over,
+                    ending=ending
+                )
+    except Exception as e:
+        # Don't fail the turn if wingman broadcast fails
+        print(f"Wingman broadcast error: {e}")
 
     # Build response
     tags_response = TagsResponse(

@@ -81,22 +81,38 @@ export default function LandingPage() {
 
         {/* Start Button */}
         {showButton && (
-          <motion.button
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleStart}
-            disabled={loading}
-            className="px-8 py-4 font-mono text-lg border-2 transition-colors disabled:opacity-50"
-            style={{
-              borderColor: 'var(--terminal-tension)',
-              color: 'var(--terminal-tension)',
-              backgroundColor: 'transparent'
-            }}
+            className="flex flex-col gap-3"
           >
-            {loading ? '[ INITIALIZING... ]' : '[ START ENCOUNTER ]'}
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleStart}
+              disabled={loading}
+              className="px-8 py-4 font-mono text-lg border-2 transition-colors disabled:opacity-50"
+              style={{
+                borderColor: 'var(--terminal-tension)',
+                color: 'var(--terminal-tension)',
+                backgroundColor: 'transparent'
+              }}
+            >
+              {loading ? '[ INITIALIZING... ]' : '[ START ENCOUNTER ]'}
+            </motion.button>
+
+            <Link
+              href="/wingman"
+              className="px-8 py-3 font-mono text-sm border-2 transition-opacity hover:opacity-80 text-center"
+              style={{
+                borderColor: 'var(--terminal-trust)',
+                color: 'var(--terminal-trust)',
+                backgroundColor: 'rgba(0, 255, 157, 0.1)'
+              }}
+            >
+              [ CO-OP MODE ] Play with a friend
+            </Link>
+          </motion.div>
         )}
 
         {/* Stat Preview */}

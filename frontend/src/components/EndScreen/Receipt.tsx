@@ -17,19 +17,20 @@ interface ReceiptProps {
   rank: string;
   ending: string;
   stats: { vibe: number; trust: number; tension: number };
-  killerQuote: string | null;
+  killerQuote?: string | null;
   turnCount: number;
   onPlayAgain: () => void;
+  coopMode?: boolean;
 }
 
-export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAgain }: ReceiptProps) {
+export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAgain, coopMode = false }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const { playEnding, setMusicState } = useAudio();
   const { deviceId } = useDeviceId();
 
-  // Leaderboard state
+  // Leaderboard state (disabled in co-op mode)
   const [showCallsignModal, setShowCallsignModal] = useState(
-    shouldPromptCallsign(rank)
+    !coopMode && shouldPromptCallsign(rank)
   );
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboardResult, setLeaderboardResult] = useState<SubmitScoreResponse | null>(null);
@@ -41,9 +42,9 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
     playEnding(rank);
   }, [rank, playEnding, setMusicState]);
 
-  // Auto-submit for D-rank (no callsign prompt)
+  // Auto-submit for D-rank (no callsign prompt) - disabled in co-op mode
   useEffect(() => {
-    if (rank === 'D' && deviceId && isEligibleForLeaderboard(rank) && !leaderboardResult) {
+    if (!coopMode && rank === 'D' && deviceId && isEligibleForLeaderboard(rank) && !leaderboardResult) {
       submitScore({
         device_id: deviceId,
         grade: rank,
@@ -54,7 +55,7 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
         turns: turnCount,
       }).then(setLeaderboardResult).catch(console.error);
     }
-  }, [rank, deviceId, stats, ending, turnCount, leaderboardResult]);
+  }, [coopMode, rank, deviceId, stats, ending, turnCount, leaderboardResult]);
 
   // Handle callsign submission
   const handleCallsignSubmit = async (callsign: string | null) => {
@@ -282,8 +283,8 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
           </motion.div>
         )}
 
-        {/* View Leaderboard Button */}
-        {isEligibleForLeaderboard(rank) && !showCallsignModal && (
+        {/* View Leaderboard Button (hidden in co-op mode) */}
+        {!coopMode && isEligibleForLeaderboard(rank) && !showCallsignModal && (
           <motion.button
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
