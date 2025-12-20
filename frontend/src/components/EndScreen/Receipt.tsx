@@ -12,6 +12,9 @@ import {
   SubmitScoreResponse,
 } from '@/lib/leaderboard';
 import { CallsignModal, FullLeaderboard } from '@/components/Leaderboard';
+import { analyzeDiagnostics, type DetailedTurn, type DiagnosticItem } from '@/lib/diagnostics';
+import { DiagnosticLine } from './DiagnosticLine';
+import { TerminalLogs } from './TerminalLogs';
 
 interface ReceiptProps {
   rank: string;
@@ -20,9 +23,10 @@ interface ReceiptProps {
   killerQuote: string | null;
   turnCount: number;
   onPlayAgain: () => void;
+  detailedHistory?: DetailedTurn[];
 }
 
-export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAgain }: ReceiptProps) {
+export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAgain, detailedHistory = [] }: ReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const { playEnding, setMusicState } = useAudio();
   const { deviceId } = useDeviceId();
@@ -34,6 +38,27 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboardResult, setLeaderboardResult] = useState<SubmitScoreResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // AAR state
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticItem[]>([]);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Analyze diagnostics when history is available
+  useEffect(() => {
+    if (detailedHistory.length > 0) {
+      const results = analyzeDiagnostics(detailedHistory, rank, stats);
+      setDiagnostics(results);
+    }
+  }, [detailedHistory, rank, stats]);
+
+  // Check for desktop viewport
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // Play ending sound and stop BGM when receipt appears
   useEffect(() => {
@@ -301,7 +326,125 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
             [ VIEW LEADERBOARD ]
           </motion.button>
         )}
+
+        {/* AAR Diagnostics Button - show when history is available */}
+        {detailedHistory.length > 0 && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowDiagnostics(!showDiagnostics)}
+            className="w-full px-6 py-3 font-mono border-2 transition-all"
+            style={{
+              borderColor: showDiagnostics ? 'var(--terminal-vibe)' : 'var(--terminal-dim)',
+              color: showDiagnostics ? 'var(--terminal-vibe)' : 'var(--terminal-dim)',
+              backgroundColor: 'transparent',
+              animation: !showDiagnostics ? 'diagnostic-pulse 2s ease-in-out infinite' : 'none',
+            }}
+          >
+            {showDiagnostics ? '[ HIDE DIAGNOSTICS ]' : '[ RUN_SYSTEM_DIAGNOSTICS ]'}
+          </motion.button>
+        )}
+
+        {/* Mobile Accordion: AAR Diagnostics Panel */}
+        <AnimatePresence>
+          {showDiagnostics && !isDesktop && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden w-full"
+            >
+              <div
+                className="p-4 border-2"
+                style={{
+                  borderColor: 'var(--terminal-dim)',
+                  backgroundColor: 'var(--terminal-bg)',
+                }}
+              >
+                {/* Header */}
+                <div
+                  className="text-xs mb-4 pb-2 border-b font-mono"
+                  style={{
+                    color: 'var(--terminal-vibe)',
+                    borderColor: 'var(--terminal-dim)',
+                  }}
+                >
+                  &gt; DIAGNOSTIC_LOG_RESULT
+                </div>
+
+                {/* Diagnostics list */}
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {diagnostics.length === 0 ? (
+                    <div
+                      className="p-3 text-sm font-mono"
+                      style={{
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        borderLeft: '3px solid var(--terminal-success)',
+                        color: 'var(--terminal-success)',
+                      }}
+                    >
+                      <span className="font-bold">[✓] NO CRITICAL ERRORS</span>
+                      <p className="text-xs mt-1 opacity-80">
+                        Mission execution optimal.
+                      </p>
+                    </div>
+                  ) : (
+                    diagnostics.map((diag, idx) => (
+                      <DiagnosticLine key={diag.code} item={diag} index={idx} />
+                    ))
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div
+                  className="mt-4 pt-3 border-t text-xs font-mono"
+                  style={{
+                    borderColor: 'var(--terminal-dim)',
+                    color: 'var(--terminal-dim)',
+                  }}
+                >
+                  {diagnostics.length} pattern{diagnostics.length !== 1 ? 's' : ''} detected
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Desktop: Side Panel AAR */}
+      <AnimatePresence>
+        {showDiagnostics && isDesktop && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 400, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="fixed right-0 top-0 h-full border-l-2 overflow-hidden z-40"
+            style={{
+              borderColor: 'var(--terminal-dim)',
+              backgroundColor: 'var(--terminal-bg)',
+            }}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <button
+                onClick={() => setShowDiagnostics(false)}
+                className="font-mono text-sm px-3 py-1 border"
+                style={{
+                  borderColor: 'var(--terminal-dim)',
+                  color: 'var(--terminal-dim)',
+                }}
+              >
+                [X]
+              </button>
+            </div>
+            <TerminalLogs diagnostics={diagnostics} turnCount={turnCount} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Callsign Modal */}
       <CallsignModal

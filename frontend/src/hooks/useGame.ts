@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from '@/lib/api';
 import { useTimer, SilenceLevel } from './useTimer';
 import { useDeviceId } from './useDeviceId';
+import type { DetailedTurn } from '@/lib/diagnostics';
 
 export interface Message {
   id: string;
@@ -34,6 +35,9 @@ export interface Ending {
   killerQuote: string | null;
 }
 
+// Re-export DetailedTurn for consumers
+export type { DetailedTurn };
+
 const TYPING_SHIELD_MS = 1500;  // Pause timer if user typed within this window
 
 export function useGame() {
@@ -55,6 +59,7 @@ export function useGame() {
   const [gameOver, setGameOver] = useState(false);
   const [ending, setEnding] = useState<Ending | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [detailedHistory, setDetailedHistory] = useState<DetailedTurn[]>([]);
 
   // Typing Shield: Track when user last typed to pause timer
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState(0);
@@ -91,6 +96,28 @@ export function useGame() {
           rank: result.ending[0] || 'F',
           killerQuote: result.response
         });
+        // Fetch detailed history for AAR
+        if (sessionId) {
+          try {
+            const historyResponse = await api.getDetailedHistory(sessionId);
+            setDetailedHistory(historyResponse.turns.map(t => ({
+              turn_number: t.turn_number,
+              user_input: t.user_input,
+              chloe_response: t.chloe_response,
+              tags: t.tags,
+              stat_changes: t.stat_changes,
+              stats_after: {
+                vibe: t.stats_after.vibe,
+                trust: t.stats_after.trust,
+                tension: t.stats_after.tension,
+              },
+              intuition_hint: t.intuition_hint,
+              critical_event: t.critical_event,
+            })));
+          } catch {
+            setDetailedHistory([]);
+          }
+        }
       }
     } catch (error) {
       console.error('Silence penalty error:', error);
@@ -209,15 +236,33 @@ export function useGame() {
       // Check game over
       if (result.game_over && result.ending) {
         setGameOver(true);
-        // Get the full breakdown
+        // Get the full breakdown and detailed history for AAR
         try {
-          const breakdown = await api.getBreakdown(sessionId);
+          const [breakdown, historyResponse] = await Promise.all([
+            api.getBreakdown(sessionId),
+            api.getDetailedHistory(sessionId),
+          ]);
           setEnding({
             type: result.ending,
             message: result.ending_message || '',
             rank: breakdown.rank,
             killerQuote: breakdown.killer_quote
           });
+          // Convert API response to DetailedTurn format
+          setDetailedHistory(historyResponse.turns.map(t => ({
+            turn_number: t.turn_number,
+            user_input: t.user_input,
+            chloe_response: t.chloe_response,
+            tags: t.tags,
+            stat_changes: t.stat_changes,
+            stats_after: {
+              vibe: t.stats_after.vibe,
+              trust: t.stats_after.trust,
+              tension: t.stats_after.tension,
+            },
+            intuition_hint: t.intuition_hint,
+            critical_event: t.critical_event,
+          })));
         } catch {
           setEnding({
             type: result.ending,
@@ -225,6 +270,7 @@ export function useGame() {
             rank: result.ending[0] || '?',
             killerQuote: result.chloe_response
           });
+          setDetailedHistory([]);
         }
       }
 
@@ -262,6 +308,7 @@ export function useGame() {
     setDeltas({ vibe: 0, trust: 0, tension: 0 });
     setGameOver(false);
     setEnding(null);
+    setDetailedHistory([]);
   }, [sessionId]);
 
   return {
@@ -284,5 +331,7 @@ export function useGame() {
       isRunning: timer.isRunning,
       isTyping,  // True when typing shield is active
     },
+    // V3: AAR detailed history
+    detailedHistory,
   };
 }

@@ -140,6 +140,44 @@ export async function deleteGame(sessionId: string): Promise<void> {
 }
 
 // =============================================================================
+// V3: After-Action Report API
+// =============================================================================
+
+export interface DetailedHistoryTurn {
+  turn_number: number;
+  user_input: string;
+  chloe_response: string;
+  tags: Tags;
+  stat_changes: StatChanges;
+  stats_after: {
+    vibe: number;
+    trust: number;
+    tension: number;
+    turn: number;
+    act: string;
+    lockout_turns: number;
+  };
+  intuition_hint: string | null;
+  critical_event: CriticalEvent | null;
+}
+
+export interface DetailedHistoryResponse {
+  session_id: string;
+  turns: DetailedHistoryTurn[];
+}
+
+/**
+ * Get detailed game history for After-Action Report
+ */
+export async function getDetailedHistory(sessionId: string): Promise<DetailedHistoryResponse> {
+  const res = await fetch(`${API_BASE}/api/games/${sessionId}/detailed-history`);
+  if (!res.ok) {
+    throw new Error('Failed to get detailed history');
+  }
+  return res.json();
+}
+
+// =============================================================================
 // V2: Silence Timer API
 // =============================================================================
 

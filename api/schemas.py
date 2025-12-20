@@ -105,6 +105,24 @@ class HistoryResponse(BaseModel):
     turns: List[HistoryEntry]
 
 
+class DetailedHistoryEntry(BaseModel):
+    """Detailed turn history with tags and stats for AAR analysis"""
+    turn_number: int
+    user_input: str
+    chloe_response: str
+    tags: TagsResponse
+    stat_changes: StatChanges
+    stats_after: CurrentStats
+    intuition_hint: Optional[str] = None
+    critical_event: Optional[CriticalEventResponse] = None
+
+
+class DetailedHistoryResponse(BaseModel):
+    """Detailed game history for AAR"""
+    session_id: str
+    turns: List[DetailedHistoryEntry]
+
+
 class ErrorResponse(BaseModel):
     """Error response"""
     detail: str

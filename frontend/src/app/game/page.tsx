@@ -26,6 +26,7 @@ export default function GamePage() {
     resetGame,
     notifyTyping,
     timer,
+    detailedHistory,
   } = useGame();
 
   const { setMusicState, playStatChange, playTensionPing, playWarning } = useAudio();
@@ -137,6 +138,7 @@ export default function GamePage() {
           killerQuote={ending.killerQuote}
           turnCount={stats.turn}
           onPlayAgain={resetGame}
+          detailedHistory={detailedHistory}
         />
       </main>
     );

@@ -242,3 +242,15 @@ input.bg-transparent:focus,
     0.5px 0 0 rgba(255, 0, 0, 0.03),
     -0.5px 0 0 rgba(0, 255, 255, 0.03);
 }
+
+/* Diagnostic pulse animation for AAR button */
+@keyframes diagnostic-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--terminal-vibe);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--terminal-vibe), 0 0 30px var(--terminal-vibe);
+    transform: scale(1.02);
+  }
+}

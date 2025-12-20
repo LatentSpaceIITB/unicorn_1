@@ -22,6 +22,8 @@ from api.schemas import (
     GameStateResponse,
     HistoryResponse,
     HistoryEntry,
+    DetailedHistoryResponse,
+    DetailedHistoryEntry,
     SilenceRequest,
     SilenceResponse,
 )
@@ -325,6 +327,59 @@ async def get_history(session_id: str):
         ))
 
     return HistoryResponse(
+        session_id=session_id,
+        turns=turns
+    )
+
+
+@router.get("/{session_id}/detailed-history", response_model=DetailedHistoryResponse)
+async def get_detailed_history(session_id: str):
+    """Get detailed game history for After-Action Report analysis"""
+    state = sessions.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    turns = []
+    for turn in state.history:
+        # Build critical event response if present
+        critical_event_response = None
+        if turn.critical_event:
+            critical_event_response = CriticalEventResponse(
+                turn_number=turn.critical_event.turn_number,
+                event_type=turn.critical_event.event_type,
+                description=turn.critical_event.description,
+                stat_impact=turn.critical_event.stat_impact
+            )
+
+        turns.append(DetailedHistoryEntry(
+            turn_number=turn.turn_number,
+            user_input=turn.user_input,
+            chloe_response=turn.chloe_response,
+            tags=TagsResponse(
+                intent=turn.tags.intent,
+                modifier=turn.tags.modifier,
+                tone=turn.tags.tone,
+                topic=turn.tags.topic,
+                flags=turn.tags.flags
+            ),
+            stat_changes=StatChanges(
+                vibe=turn.vibe_change,
+                trust=turn.trust_change,
+                tension=turn.tension_change
+            ),
+            stats_after=CurrentStats(
+                vibe=turn.vibe_after,
+                trust=turn.trust_after,
+                tension=turn.tension_after,
+                turn=turn.turn_number + 1,
+                act="",  # Not stored per-turn
+                lockout_turns=0  # Not stored per-turn
+            ),
+            intuition_hint=turn.intuition_hint,
+            critical_event=critical_event_response
+        ))
+
+    return DetailedHistoryResponse(
         session_id=session_id,
         turns=turns
     )
