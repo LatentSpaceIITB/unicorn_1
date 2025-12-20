@@ -18,7 +18,10 @@ load_dotenv()
 
 from api.routes.games import router as games_router
 from api.routes.leaderboard import router as leaderboard_router
+from api.routes.paperclip import router as paperclip_router
+from api.routes.activity import router as activity_router
 from api.session import sessions
+from api.paperclip_session import paperclip_sessions
 from api.analytics import analytics
 
 
@@ -66,6 +69,8 @@ app.add_middleware(
 # Include routes
 app.include_router(games_router)
 app.include_router(leaderboard_router)
+app.include_router(paperclip_router)
+app.include_router(activity_router)
 
 
 @app.get("/")
@@ -73,15 +78,32 @@ async def root():
     """Root endpoint"""
     return {
         "name": "Read the Room API",
-        "version": "1.0.0",
-        "description": "Can you survive a first date?",
-        "endpoints": {
-            "create_game": "POST /api/games",
-            "get_game": "GET /api/games/{session_id}",
-            "process_turn": "POST /api/games/{session_id}/turn",
-            "get_breakdown": "GET /api/games/{session_id}/breakdown",
-            "get_history": "GET /api/games/{session_id}/history",
-            "delete_game": "DELETE /api/games/{session_id}",
+        "version": "2.0.0",
+        "description": "Social Simulation Games - Dating & AI Alignment",
+        "games": {
+            "dating": {
+                "name": "Read the Room",
+                "description": "Can you survive a first date?",
+                "endpoints": {
+                    "create_game": "POST /api/games",
+                    "get_game": "GET /api/games/{session_id}",
+                    "process_turn": "POST /api/games/{session_id}/turn",
+                    "get_breakdown": "GET /api/games/{session_id}/breakdown",
+                    "get_history": "GET /api/games/{session_id}/history",
+                }
+            },
+            "paperclip": {
+                "name": "The Paperclip Protocol",
+                "description": "Can you convince an AI not to destroy humanity?",
+                "endpoints": {
+                    "create_game": "POST /api/paperclip",
+                    "get_game": "GET /api/paperclip/{session_id}",
+                    "process_turn": "POST /api/paperclip/{session_id}/turn",
+                    "get_logs": "GET /api/paperclip/{session_id}/logs",
+                    "get_breakdown": "GET /api/paperclip/{session_id}/breakdown",
+                    "get_history": "GET /api/paperclip/{session_id}/history",
+                }
+            }
         }
     }
 
@@ -91,7 +113,10 @@ async def health():
     """Health check endpoint"""
     return {
         "status": "ok",
-        "active_sessions": sessions.count()
+        "active_sessions": {
+            "dating": sessions.count(),
+            "paperclip": paperclip_sessions.count()
+        }
     }
 
 

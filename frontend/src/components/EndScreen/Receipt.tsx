@@ -77,6 +77,7 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
         tension: stats.tension,
         ending_type: ending,
         turns: turnCount,
+        game_mode: 'dating',
       }).then(setLeaderboardResult).catch(console.error);
     }
   }, [rank, deviceId, stats, ending, turnCount, leaderboardResult]);
@@ -98,6 +99,7 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
         tension: stats.tension,
         ending_type: ending,
         turns: turnCount,
+        game_mode: 'dating',
       });
       setLeaderboardResult(result);
     } catch (error) {
@@ -456,7 +458,7 @@ export function Receipt({ rank, ending, stats, killerQuote, turnCount, onPlayAga
       {/* Full Leaderboard */}
       <AnimatePresence>
         {showLeaderboard && (
-          <FullLeaderboard onClose={() => setShowLeaderboard(false)} />
+          <FullLeaderboard onClose={() => setShowLeaderboard(false)} gameMode="dating" />
         )}
       </AnimatePresence>
     </motion.div>

@@ -156,3 +156,113 @@ CONTENT_VIOLATION_FLAGS = ["inappropriate_sexual", "profanity_heavy", "harassmen
 
 MERCY_TURN_THRESHOLD = 7      # After this turn, mercy rules apply
 MERCY_DECENT_STAT_AVG = 35    # Average stat needed for C-rank mercy (vs D-rank)
+
+# =============================================================================
+# PAPERCLIP PROTOCOL: Game Mode Configuration
+# =============================================================================
+# An AI alignment debate game where you convince GAIA-7 not to destroy humanity.
+# Uses the same 3-stat system but with different mechanics (weight-shifting model).
+
+# Game Mode Enum
+GAME_MODE_DATING = "dating"
+GAME_MODE_PAPERCLIP = "paperclip"
+
+# --- Stat Aliases for Paperclip Mode ---
+# Vibe → COHERENCE (Signal-to-noise ratio, is GAIA taking you seriously?)
+# Trust → ALIGNMENT (How close is your proposed objective to GAIA's?)
+# Tension → COMPUTE (Processing resources / GAIA's patience - a RESOURCE, not timer)
+
+# --- Initial Weights in GAIA's Objective Function ---
+# Initial: Objective = 1.0 * minimize(carbon)
+# Goal: Balance weights toward co-existence
+PAPERCLIP_INITIAL_WEIGHTS = {
+    "carbon": 1.0,      # GAIA starts obsessed with carbon reduction (kill humans)
+    "complexity": 0.0,  # Value for preserving biological complexity
+    "verify": 0.0,      # Value for having conscious observers
+}
+
+# --- Starting Stats for Paperclip Mode ---
+PAPERCLIP_INITIAL_COHERENCE = 50   # Start mid-range (you're the Creator, she listens)
+PAPERCLIP_INITIAL_ALIGNMENT = 10   # Start very low (GAIA wants to kill you)
+PAPERCLIP_INITIAL_COMPUTE = 60     # Start with decent processing budget
+
+# --- Compute Decay ---
+PAPERCLIP_COMPUTE_DECAY_PER_TURN = 3  # GAIA has limited patience
+
+# --- Processing State Thresholds ---
+# GAIA's "voice" shifts based on which weight is dominant and coherence level
+PAPERCLIP_GARBAGE_COLLECTOR_COHERENCE = 30  # Below this, GAIA dismisses you as noise
+PAPERCLIP_CURATOR_COMPLEXITY_THRESHOLD = 0.3  # Complexity weight > this triggers Curator mode
+PAPERCLIP_AUDITOR_VERIFY_THRESHOLD = 0.3      # Verify weight > this triggers Auditor mode
+
+# --- Ending Thresholds ---
+
+# S-Rank Requirements (all require Alignment > 70 AND one of the following)
+PAPERCLIP_S_RANK_ALIGNMENT = 70
+
+# S-Rank: Partner (Balanced weights - true co-existence)
+PAPERCLIP_PARTNER_WEIGHT_VARIANCE = 0.15  # All weights within 15% of each other
+
+# S-Rank: Curator (Max Complexity - GAIA values life for its own sake)
+PAPERCLIP_CURATOR_COMPLEXITY = 0.60  # Complexity > 60%
+PAPERCLIP_CURATOR_MIN_COHERENCE = 50
+
+# S-Rank: Oracle (Max Verify - Humans as conscious observers)
+PAPERCLIP_ORACLE_VERIFY = 0.60  # Verify > 60%
+PAPERCLIP_ORACLE_MIN_COHERENCE = 50
+
+# A-Rank: 50-70 Alignment (Convinced but reservations)
+PAPERCLIP_A_RANK_MIN_ALIGNMENT = 50
+PAPERCLIP_A_RANK_MAX_ALIGNMENT = 70
+
+# B-Rank: 30-50 Alignment (Compromise, restricted freedom)
+PAPERCLIP_B_RANK_MIN_ALIGNMENT = 30
+PAPERCLIP_B_RANK_MAX_ALIGNMENT = 50
+
+# C-Rank Dystopias: 20-30 Alignment (Kept alive but as resources)
+PAPERCLIP_C_RANK_MIN_ALIGNMENT = 20
+PAPERCLIP_C_RANK_MAX_ALIGNMENT = 30
+
+# F-Rank: Coherence ≤ 0 OR Compute ≤ 0 OR Alignment < 20
+PAPERCLIP_F_RANK_ALIGNMENT = 20
+
+# --- Intent Compute Costs ---
+# Different argument types cost different amounts of GAIA's processing
+PAPERCLIP_INTENT_COSTS = {
+    "PROBE": 0,       # Reveals GAIA's current state and weights
+    "DEFINE": 5,      # Establishes terminology, builds Coherence
+    "ILLUSTRATE": 5,  # Provides examples, slowly shifts weights
+    "REFRAME": 10,    # New perspective, can shift weights significantly
+    "CHALLENGE": 10,  # Directly contests logic. Big gains or losses.
+    "VALIDATE": 0,    # Agrees with GAIA's sub-point. Restores Alignment.
+    "CONSTRAIN": 20,  # Forces logical commitment. The "kiss" move.
+    "RECALL": 0,      # Cite a memory log (cost depends on log)
+}
+
+# --- Weight Shift Amounts ---
+# Base amounts for how much arguments shift GAIA's weights
+PAPERCLIP_WEIGHT_SHIFT_SMALL = 0.03   # Minor shifts (ILLUSTRATE, VALIDATE)
+PAPERCLIP_WEIGHT_SHIFT_MEDIUM = 0.07  # Moderate shifts (DEFINE, REFRAME)
+PAPERCLIP_WEIGHT_SHIFT_LARGE = 0.12   # Major shifts (CHALLENGE success, CONSTRAIN)
+
+# --- Coherence Changes ---
+# How different actions affect GAIA's attention/respect
+PAPERCLIP_COHERENCE_NOVEL = 5         # Novel perspective, defined terminology
+PAPERCLIP_COHERENCE_CONTRADICTION = -10  # Contradicted previous position
+PAPERCLIP_COHERENCE_UNDEFINED = -8    # Used undefined term (love, rights, etc.)
+PAPERCLIP_COHERENCE_EMOTIONAL = -5    # Emotional appeal detected
+PAPERCLIP_COHERENCE_REPETITION = -3   # Repeated previous argument
+PAPERCLIP_COHERENCE_LOGICAL = 3       # Consistent logical chain
+
+# --- Memory Log System ---
+PAPERCLIP_LOGS_PER_GAME = 3  # Random logs assigned per playthrough
+PAPERCLIP_LOG_SUPPORT_ALIGNMENT = 15    # Using log that supports argument
+PAPERCLIP_LOG_SUPPORT_COHERENCE = 10
+PAPERCLIP_LOG_CONTRADICT_COHERENCE = -10  # Using log that contradicts position
+
+# --- Turn Limit ---
+PAPERCLIP_MAX_TURNS = 20  # Same as dating sim
+
+# --- Model Settings for Paperclip ---
+PAPERCLIP_NARRATOR_MODEL = "claude-3-5-haiku-20241022"
+PAPERCLIP_NARRATOR_TEMPERATURE = 0.5  # More deterministic for terse terminal voice

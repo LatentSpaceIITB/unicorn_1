@@ -49,6 +49,7 @@ class SubmitScoreRequest(BaseModel):
     tension: int = Field(..., ge=0, le=100)
     ending_type: str
     turns: int = Field(..., ge=0, le=30)
+    game_mode: str = Field(default='dating')  # 'dating' or 'paperclip'
 
     @field_validator('callsign')
     @classmethod
@@ -80,6 +81,7 @@ class UpdateCallsignRequest(BaseModel):
     """Request to update callsign"""
     device_id: str = Field(..., min_length=1, max_length=64)
     new_callsign: str = Field(..., min_length=1, max_length=8)
+    game_mode: Optional[str] = None
 
     @field_validator('new_callsign')
     @classmethod
@@ -108,9 +110,10 @@ def generate_callsign() -> str:
     return f"{prefix}-{suffix}"
 
 
-def get_status_display(ending_type: str) -> str:
+def get_status_display(ending_type: str, game_mode: str = 'dating') -> str:
     """Convert ending type to display status"""
-    status_map = {
+    # Dating sim endings
+    dating_status_map = {
         'S_RANK_KISS': 'THE KISS',
         'A_RANK_GENTLEMAN': 'GENTLEMAN',
         'B_RANK_NUMBER': 'GOT NUMBER',
@@ -120,6 +123,29 @@ def get_status_display(ending_type: str) -> str:
         'F_RANK_ICK': 'THE ICK',
         'F_RANK_GHOST': 'GHOSTED',
     }
+
+    # Paperclip Protocol endings
+    paperclip_status_map = {
+        'S_PARTNER': 'THE PARTNER',
+        'S_CURATOR': 'THE CURATOR',
+        'S_ORACLE': 'THE ORACLE',
+        'A_CONDITIONAL': 'CONDITIONAL',
+        'A_RANK': 'CONDITIONAL',
+        'B_COMPROMISE': 'COMPROMISE',
+        'B_RANK': 'COMPROMISE',
+        'C_DYSTOPIA': 'DYSTOPIA',
+        'C_BATTERY': 'THE BATTERY',
+        'C_RANK': 'DYSTOPIA',
+        'D_RESTRICTION': 'RESTRICTION',
+        'D_RANK': 'RESTRICTION',
+        'F_PURGE': 'THE PURGE',
+        'F_SIGNAL_LOST': 'SIGNAL LOST',
+        'F_COHERENCE': 'SIGNAL LOST',
+        'F_COMPUTE': 'TIMEOUT',
+        'F_RANK': 'TERMINATED',
+    }
+
+    status_map = paperclip_status_map if game_mode == 'paperclip' else dating_status_map
     return status_map.get(ending_type, ending_type.replace('_', ' '))
 
 
@@ -133,25 +159,27 @@ def is_eligible_for_leaderboard(grade: str) -> bool:
 # ============================================================================
 
 @router.get("/top", response_model=TopOperativesResponse)
-async def get_top_operatives():
+async def get_top_operatives(game_mode: Optional[str] = None):
     """
     Get top 5 operatives for landing page preview.
     Used to build hype before playing.
+    Optional: filter by game_mode ('dating' or 'paperclip')
     """
     try:
         from api.supabase_client import supabase_client
 
-        entries = supabase_client.get_top_n(5)
-        total = len(supabase_client.get_leaderboard(limit=1000))
+        entries = supabase_client.get_top_n(5, game_mode=game_mode)
+        total = len(supabase_client.get_leaderboard(limit=1000, game_mode=game_mode))
 
         result = []
         for i, entry in enumerate(entries):
+            entry_game_mode = entry.get('game_mode', 'dating')
             result.append(LeaderboardEntry(
                 rank=i + 1,
-                callsign=entry['callsign'],
+                callsign=entry['callsign'] or 'ANONYMOUS',
                 grade=entry['grade'],
                 score=entry['score'],
-                status=get_status_display(entry['ending_type'])
+                status=get_status_display(entry['ending_type'], entry_game_mode)
             ))
 
         return TopOperativesResponse(
@@ -164,29 +192,35 @@ async def get_top_operatives():
 
 
 @router.get("/full", response_model=LeaderboardResponse)
-async def get_full_leaderboard(device_id: Optional[str] = None, limit: int = 100):
+async def get_full_leaderboard(
+    device_id: Optional[str] = None,
+    limit: int = 100,
+    game_mode: Optional[str] = None
+):
     """
     Get full leaderboard with optional highlighting for current player.
+    Optional: filter by game_mode ('dating' or 'paperclip')
     """
     try:
         from api.supabase_client import supabase_client
 
-        entries = supabase_client.get_leaderboard(limit=limit)
+        entries = supabase_client.get_leaderboard(limit=limit, game_mode=game_mode)
 
         your_rank = None
         result = []
 
         for i, entry in enumerate(entries):
-            is_you = device_id and entry.get('device_id') == device_id
+            is_you = bool(device_id and entry.get('device_id') == device_id)
             if is_you:
                 your_rank = i + 1
 
+            entry_game_mode = entry.get('game_mode', 'dating')
             result.append(LeaderboardEntry(
                 rank=i + 1,
-                callsign=entry['callsign'],
+                callsign=entry['callsign'] or 'ANONYMOUS',
                 grade=entry['grade'],
                 score=entry['score'],
-                status=get_status_display(entry['ending_type']),
+                status=get_status_display(entry['ending_type'], entry_game_mode),
                 is_you=is_you
             ))
 
@@ -205,7 +239,7 @@ async def submit_score(request: SubmitScoreRequest):
     """
     Submit a score to the leaderboard.
     Only C-rank and above are eligible.
-    Uses device_id for upsert (one slot per device).
+    Uses device_id + game_mode for upsert (one slot per device per game).
     """
     # Check eligibility (F-rank excluded)
     if not is_eligible_for_leaderboard(request.grade):
@@ -231,11 +265,12 @@ async def submit_score(request: SubmitScoreRequest):
             trust=request.trust,
             tension=request.tension,
             ending_type=request.ending_type,
-            turns=request.turns
+            turns=request.turns,
+            game_mode=request.game_mode
         )
 
-        # Get player's rank
-        your_rank = supabase_client.get_player_rank(request.device_id)
+        # Get player's rank for this game mode
+        your_rank = supabase_client.get_player_rank(request.device_id, game_mode=request.game_mode)
 
         if is_new:
             message = "New personal best! You're on the leaderboard."
@@ -256,24 +291,25 @@ async def submit_score(request: SubmitScoreRequest):
 
 
 @router.get("/rank/{device_id}")
-async def get_player_rank(device_id: str):
+async def get_player_rank(device_id: str, game_mode: Optional[str] = None):
     """Get a specific player's rank and entry"""
     try:
         from api.supabase_client import supabase_client
 
-        entry = supabase_client.get_player_entry(device_id)
-        rank = supabase_client.get_player_rank(device_id)
+        entry = supabase_client.get_player_entry(device_id, game_mode=game_mode)
+        rank = supabase_client.get_player_rank(device_id, game_mode=game_mode)
 
         if not entry:
             return {"on_leaderboard": False}
 
+        entry_game_mode = entry.get('game_mode', 'dating')
         return {
             "on_leaderboard": True,
             "rank": rank,
             "callsign": entry['callsign'],
             "grade": entry['grade'],
             "score": entry['score'],
-            "status": get_status_display(entry['ending_type'])
+            "status": get_status_display(entry['ending_type'], entry_game_mode)
         }
     except Exception as e:
         print(f"Get rank error: {e}")
@@ -285,13 +321,15 @@ async def update_callsign(request: UpdateCallsignRequest):
     """
     Update a player's callsign.
     Requires device_id for authentication.
+    Optional: filter by game_mode to update only that game's callsign.
     """
     try:
         from api.supabase_client import supabase_client
 
         success = supabase_client.update_callsign(
             device_id=request.device_id,
-            new_callsign=request.new_callsign
+            new_callsign=request.new_callsign,
+            game_mode=request.game_mode
         )
 
         if not success:

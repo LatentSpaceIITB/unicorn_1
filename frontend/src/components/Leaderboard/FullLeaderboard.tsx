@@ -13,9 +13,10 @@ import { CallsignModal } from './CallsignModal';
 
 interface FullLeaderboardProps {
   onClose: () => void;
+  gameMode?: 'dating' | 'paperclip';
 }
 
-export function FullLeaderboard({ onClose }: FullLeaderboardProps) {
+export function FullLeaderboard({ onClose, gameMode }: FullLeaderboardProps) {
   const { deviceId } = useDeviceId();
   const [data, setData] = useState<FullLeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,9 +26,7 @@ export function FullLeaderboard({ onClose }: FullLeaderboardProps) {
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const result = deviceId
-        ? await getFullLeaderboard(deviceId)
-        : await getFullLeaderboard();
+      const result = await getFullLeaderboard(deviceId || undefined, 100, gameMode);
       setData(result);
 
       // Find current user's callsign
@@ -42,7 +41,7 @@ export function FullLeaderboard({ onClose }: FullLeaderboardProps) {
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [deviceId]);
+  }, [deviceId, gameMode]);
 
   const handleEditCallsign = () => {
     setShowEditModal(true);
@@ -87,7 +86,7 @@ export function FullLeaderboard({ onClose }: FullLeaderboardProps) {
               className="font-mono text-sm tracking-wider"
               style={{ color: 'var(--terminal-dim)' }}
             >
-              [ FULL SIGNAL INTERCEPT LOG ]
+              [ {gameMode === 'paperclip' ? 'ALIGNMENT TEST' : 'SOCIAL DYNAMICS'} RANKINGS ]
             </div>
             <button
               onClick={onClose}

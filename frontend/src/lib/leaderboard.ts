@@ -33,6 +33,7 @@ export interface SubmitScoreRequest {
   tension: number;
   ending_type: string;
   turns: number;
+  game_mode?: 'dating' | 'paperclip';
 }
 
 export interface SubmitScoreResponse {
@@ -56,10 +57,14 @@ export interface UpdateCallsignResponse {
 
 /**
  * Get top 5 operatives for landing page
+ * @param gameMode - Optional filter by game mode ('dating' or 'paperclip')
  */
-export async function getTopOperatives(): Promise<TopOperativesResponse> {
+export async function getTopOperatives(gameMode?: 'dating' | 'paperclip'): Promise<TopOperativesResponse> {
   try {
-    const res = await fetch(`${API_BASE}/api/leaderboard/top`);
+    const params = new URLSearchParams();
+    if (gameMode) params.set('game_mode', gameMode);
+    const url = `${API_BASE}/api/leaderboard/top${params.toString() ? `?${params}` : ''}`;
+    const res = await fetch(url);
     if (!res.ok) {
       throw new Error('Failed to fetch top operatives');
     }
@@ -72,14 +77,19 @@ export async function getTopOperatives(): Promise<TopOperativesResponse> {
 
 /**
  * Get full leaderboard with optional player highlighting
+ * @param deviceId - Optional device ID to highlight current player
+ * @param limit - Maximum entries to return (default 100)
+ * @param gameMode - Optional filter by game mode ('dating' or 'paperclip')
  */
 export async function getFullLeaderboard(
   deviceId?: string,
-  limit: number = 100
+  limit: number = 100,
+  gameMode?: 'dating' | 'paperclip'
 ): Promise<FullLeaderboardResponse> {
   const params = new URLSearchParams();
   if (deviceId) params.set('device_id', deviceId);
   params.set('limit', limit.toString());
+  if (gameMode) params.set('game_mode', gameMode);
 
   const res = await fetch(`${API_BASE}/api/leaderboard/full?${params}`);
   if (!res.ok) {

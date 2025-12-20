@@ -1,162 +1,227 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LiveActivityFeed } from '@/components/LiveActivityFeed';
 import { TypeWriter } from '@/components/ui/TypeWriter';
-import { createGame } from '@/lib/api';
-import { TopOperatives } from '@/components/Leaderboard';
-import { useDeviceId } from '@/hooks/useDeviceId';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { deviceId } = useDeviceId();
-  const [loading, setLoading] = useState(false);
-  const [showSubtitle, setShowSubtitle] = useState(false);
-  const [showButton, setShowButton] = useState(false);
+  const [bootComplete, setBootComplete] = useState(false);
+  const [bootText, setBootText] = useState('');
 
-  const handleStart = async () => {
-    setLoading(true);
-    try {
-      const { session_id } = await createGame(deviceId || undefined);
-      localStorage.setItem('session_id', session_id);
-      router.push('/game');
-    } catch (error) {
-      console.error('Failed to create game:', error);
-      setLoading(false);
-    }
+  // Boot sequence text
+  const bootSequence = [
+    '// NEURAL_LINK_V4.2 [CONNECTED]',
+    '// USER: OPERATIVE_01',
+    '// INITIALIZING SIMULATION PROTOCOLS...',
+    '// SYSTEMS ONLINE',
+  ];
+
+  // Animate boot sequence
+  useEffect(() => {
+    let index = 0;
+    const interval = setInterval(() => {
+      if (index < bootSequence.length) {
+        setBootText(prev => prev + (prev ? '\n' : '') + bootSequence[index]);
+        index++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => setBootComplete(true), 500);
+      }
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleDatingClick = () => {
+    router.push('/game/briefing');
+  };
+
+  const handlePaperclipClick = () => {
+    router.push('/paperclip/briefing');
   };
 
   return (
     <main
       className="min-h-screen flex flex-col items-center justify-center p-4"
-      style={{ backgroundColor: 'var(--terminal-bg)' }}
+      style={{ backgroundColor: '#050505' }}
     >
-      <div className="max-w-md text-center">
-        {/* Title */}
-        <motion.h1
+      <div className="w-full max-w-2xl font-mono">
+        {/* Boot Sequence */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-3xl md:text-4xl font-mono mb-6"
-          style={{ color: 'var(--terminal-text)' }}
+          className="mb-8"
         >
-          <TypeWriter
-            text="Can you get her to kiss you?"
-            speed={40}
-            onComplete={() => setShowSubtitle(true)}
-          />
-        </motion.h1>
-
-        {/* Subtitle */}
-        {showSubtitle && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-lg font-mono mb-8"
-            style={{ color: 'var(--terminal-dim)' }}
+          <pre
+            className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap"
+            style={{ color: '#666' }}
           >
-            <TypeWriter
-              text="20 turns. One chance. Don't blow it."
-              speed={30}
-              onComplete={() => setShowButton(true)}
-            />
-          </motion.p>
-        )}
+            {bootText}
+          </pre>
+        </motion.div>
 
-        {/* Marketing Copy */}
-        {showButton && (
+        {/* Main Terminal Box */}
+        <AnimatePresence>
+          {bootComplete && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="border-2 p-6 sm:p-8"
+              style={{
+                borderColor: '#333',
+                backgroundColor: 'rgba(0, 0, 0, 0.5)'
+              }}
+            >
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="text-xs tracking-widest mb-2" style={{ color: '#444' }}>
+                  {'='.repeat(50)}
+                </div>
+                <h1
+                  className="text-lg sm:text-xl tracking-widest"
+                  style={{ color: '#888' }}
+                >
+                  SELECT SIMULATION PROTOCOL
+                </h1>
+                <div className="text-xs tracking-widest mt-2" style={{ color: '#444' }}>
+                  {'='.repeat(50)}
+                </div>
+              </div>
+
+              {/* Game Options */}
+              <div className="space-y-6 mb-8">
+                {/* Dating Sim Option */}
+                <motion.button
+                  onClick={handleDatingClick}
+                  className="w-full text-left p-4 border-2 transition-all"
+                  style={{
+                    borderColor: '#333',
+                    backgroundColor: 'transparent'
+                  }}
+                  whileHover={{
+                    borderColor: '#00D9FF',
+                    backgroundColor: 'rgba(0, 217, 255, 0.05)'
+                  }}
+                >
+                  <div className="flex items-start gap-4">
+                    <span className="text-xl" style={{ color: '#00D9FF' }}>[1]</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span style={{ color: '#E0E0E0' }}>SOCIAL_DYNAMICS.exe</span>
+                        <span className="text-xs px-2 py-0.5" style={{ backgroundColor: '#00FF88', color: '#000' }}>
+                          ONLINE
+                        </span>
+                      </div>
+                      <div className="text-sm mb-2" style={{ color: '#00D9FF' }}>
+                        Read the Room
+                      </div>
+                      <div className="text-xs space-y-1" style={{ color: '#666' }}>
+                        <p>&gt; Objective: Achieve S-Rank Romantic Connection</p>
+                        <p>&gt; Difficulty: HARD</p>
+                        <p style={{ color: '#888' }}>
+                        &gt; <TypeWriter text="Can you get her to kiss you?" speed={30} delay={800} />
+                      </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+
+                {/* Paperclip Option */}
+                <motion.button
+                  onClick={handlePaperclipClick}
+                  className="w-full text-left p-4 border-2 transition-all"
+                  style={{
+                    borderColor: '#333',
+                    backgroundColor: 'transparent'
+                  }}
+                  whileHover={{
+                    borderColor: '#00FFAA',
+                    backgroundColor: 'rgba(0, 255, 170, 0.05)'
+                  }}
+                >
+                  <div className="flex items-start gap-4">
+                    <span className="text-xl" style={{ color: '#00FFAA' }}>[2]</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span style={{ color: '#E0E0E0' }}>ALIGNMENT_TEST.exe</span>
+                        <span className="text-xs px-2 py-0.5" style={{ backgroundColor: '#FFAA00', color: '#000' }}>
+                          UNSTABLE
+                        </span>
+                      </div>
+                      <div className="text-sm mb-2" style={{ color: '#00FFAA' }}>
+                        The Paperclip Protocol
+                      </div>
+                      <div className="text-xs space-y-1" style={{ color: '#666' }}>
+                        <p>&gt; Objective: Prevent GAIA-7 Purge Event</p>
+                        <p>&gt; Difficulty: EXTREME</p>
+                        <p style={{ color: '#888' }}>
+                        &gt; <TypeWriter text="Can you convince an AI not to destroy humanity?" speed={30} delay={800} />
+                      </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+              </div>
+
+              {/* Prompt */}
+              <div className="text-sm" style={{ color: '#666' }}>
+                <span style={{ color: '#00FF88' }}>root@home:~$</span>
+                <motion.span
+                  animate={{ opacity: [1, 0, 1] }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                  style={{ color: '#E0E0E0' }}
+                >
+                  _
+                </motion.span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Live Activity Feed */}
+        {bootComplete && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8 font-mono text-sm space-y-1"
-            style={{ color: 'var(--terminal-dim)' }}
-          >
-            <p>Practice before your actual date</p>
-            <p>Share on Bumble to flex your skills</p>
-            <p style={{ color: 'var(--terminal-trust)' }}>Get a certificate to prove it</p>
-          </motion.div>
-        )}
-
-        {/* Start Button */}
-        {showButton && (
-          <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleStart}
-            disabled={loading}
-            className="px-8 py-4 font-mono text-lg border-2 transition-colors disabled:opacity-50"
+            transition={{ delay: 0.5 }}
+            className="mt-8 p-4 border"
             style={{
-              borderColor: 'var(--terminal-tension)',
-              color: 'var(--terminal-tension)',
-              backgroundColor: 'transparent'
+              borderColor: '#222',
+              backgroundColor: 'rgba(0, 0, 0, 0.3)'
             }}
           >
-            {loading ? '[ INITIALIZING... ]' : '[ START ENCOUNTER ]'}
-          </motion.button>
-        )}
-
-        {/* Stat Preview */}
-        {showButton && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-12 flex justify-center gap-8 font-mono text-sm"
-          >
-            <span style={{ color: 'var(--terminal-vibe)' }}>VIBE</span>
-            <span style={{ color: 'var(--terminal-trust)' }}>TRUST</span>
-            <span style={{ color: 'var(--terminal-tension)' }}>TENSION</span>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs" style={{ color: '#666' }}>//</span>
+              <span className="text-xs tracking-widest" style={{ color: '#444' }}>
+                LIVE_ACTIVITY_FEED
+              </span>
+              <motion.span
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="text-xs"
+                style={{ color: '#00FF88' }}
+              >
+                [STREAMING]
+              </motion.span>
+            </div>
+            <LiveActivityFeed maxItems={5} pollInterval={8000} />
           </motion.div>
         )}
 
-        {/* Footer hint */}
-        {showButton && (
-          <motion.p
+        {/* Footer */}
+        {bootComplete && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             transition={{ delay: 1 }}
-            className="mt-8 font-mono text-xs"
-            style={{ color: 'var(--terminal-dim)' }}
+            className="mt-8 text-center text-xs"
+            style={{ color: '#444' }}
           >
-            Toggle between SAY and ACT modes to navigate your date
-          </motion.p>
-        )}
-
-        {/* Top Operatives Leaderboard */}
-        {showButton && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5 }}
-            className="mt-12 w-full max-w-sm"
-          >
-            <TopOperatives />
-          </motion.div>
-        )}
-
-        {/* View Full Leaderboard Button */}
-        {showButton && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2 }}
-            className="mt-6"
-          >
-            <Link
-              href="/leaderboard"
-              className="font-mono text-xs px-4 py-2 border hover:opacity-70 transition-opacity inline-block"
-              style={{
-                borderColor: 'var(--terminal-dim)',
-                color: 'var(--terminal-dim)',
-                backgroundColor: 'transparent',
-              }}
-            >
-              [ VIEW FULL LOG ]
-            </Link>
+            <p>readtheroom.ai</p>
+            <p className="mt-1">Social Simulation Training System v4.2</p>
           </motion.div>
         )}
       </div>

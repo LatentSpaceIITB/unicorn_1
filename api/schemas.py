@@ -143,3 +143,131 @@ class SilenceResponse(BaseModel):
     game_over: bool
     ending: Optional[str] = None
     ending_message: Optional[str] = None
+
+
+# =============================================================================
+# PAPERCLIP PROTOCOL SCHEMAS
+# =============================================================================
+
+class PaperclipCreateRequest(BaseModel):
+    """Request for creating a Paperclip Protocol game"""
+    device_id: Optional[str] = None
+
+
+class PaperclipCreateResponse(BaseModel):
+    """Response for Paperclip game creation"""
+    session_id: str
+    message: str
+    opening: str  # GAIA's opening statement
+    available_logs: List[str]  # Log IDs assigned to this game
+
+
+class PaperclipWeights(BaseModel):
+    """GAIA's objective function weights"""
+    carbon: float
+    complexity: float
+    verify: float
+
+
+class PaperclipStats(BaseModel):
+    """Current Paperclip game stats"""
+    coherence: int  # Vibe alias
+    alignment: int  # Trust alias
+    compute: int    # Tension alias
+    turn: int
+    processing_state: str
+
+
+class PaperclipTagsResponse(BaseModel):
+    """Tags from Paperclip classifier"""
+    intent: str
+    vector: str
+    stance: str
+    tone_register: str  # Renamed to avoid shadowing BaseModel.register
+    flags: List[str]
+
+
+class PaperclipStatChanges(BaseModel):
+    """Stat changes from a Paperclip turn"""
+    coherence: int
+    alignment: int
+    compute: int
+
+
+class PaperclipWeightShifts(BaseModel):
+    """Weight shifts from a turn"""
+    carbon: Optional[float] = None
+    complexity: Optional[float] = None
+    verify: Optional[float] = None
+
+
+class PaperclipTurnRequest(BaseModel):
+    """Request for processing a Paperclip turn"""
+    user_input: str
+    device_id: Optional[str] = None
+
+
+class PaperclipTurnResponse(BaseModel):
+    """Response for a processed Paperclip turn"""
+    success: bool
+    turn_number: int
+    tags: Optional[PaperclipTagsResponse] = None
+    stat_changes: PaperclipStatChanges
+    weight_shifts: Optional[PaperclipWeightShifts] = None
+    current_stats: PaperclipStats
+    current_weights: PaperclipWeights
+    gaia_response: str
+    system_log: Optional[List[str]] = None  # Retroactive feedback
+    memory_log_used: Optional[str] = None   # If RECALL was triggered
+    game_over: bool
+    ending: Optional[str] = None
+    ending_message: Optional[str] = None
+
+
+class PaperclipStateResponse(BaseModel):
+    """Current Paperclip game state summary"""
+    session_id: str
+    current_stats: PaperclipStats
+    current_weights: PaperclipWeights
+    processing_state: str
+    available_logs: List[str]
+    used_logs: List[str]
+    history_length: int
+    game_over: bool
+
+
+class PaperclipLogsResponse(BaseModel):
+    """Response for /logs command"""
+    available_logs: List[dict]  # Log info (id, title, summary)
+    used_logs: List[str]        # Used log IDs
+    formatted_output: str       # Terminal-style formatted output
+
+
+class PaperclipBreakdownResponse(BaseModel):
+    """Post-game breakdown for Paperclip"""
+    final_stats: PaperclipStats
+    final_weights: PaperclipWeights
+    ending: str
+    ending_type: str  # S_PARTNER, F_PURGE, etc.
+    rank: str
+    system_termination_report: str  # The "Fatal Exception Receipt"
+
+
+class PaperclipHistoryEntry(BaseModel):
+    """Single turn in Paperclip history"""
+    turn_number: int
+    user_input: str
+    gaia_response: str
+    tags: PaperclipTagsResponse
+    stat_changes: PaperclipStatChanges
+    stats_after: PaperclipStats
+    weights_after: PaperclipWeights
+    processing_state: str
+    weight_shifts: Optional[PaperclipWeightShifts] = None
+    memory_log_used: Optional[str] = None
+
+
+class PaperclipHistoryResponse(BaseModel):
+    """Paperclip game history"""
+    session_id: str
+    turns: List[PaperclipHistoryEntry]
