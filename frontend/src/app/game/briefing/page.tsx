@@ -26,7 +26,7 @@ export default function DatingBriefingPage() {
   const handleStartMission = useCallback(async () => {
     setCreating(true);
     try {
-      const response = await fetch(`${API_BASE}/api/games`, {
+      const response = await fetch(`${API_BASE}/api/games/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device_id: deviceId }),
