@@ -51,6 +51,9 @@ origins = [
     "http://127.0.0.1:3000",
     "https://readtheroom.ai",      # Production frontend
     "https://www.readtheroom.ai",
+    "https://unicorn-1.vercel.app",  # Vercel deployment
+    "https://socialsimulator.vercel.app",  # Vercel deployment
+    "https://kisschallenge.vercel.app",  # Vercel deployment
 ]
 
 # Also allow origins from environment variable
