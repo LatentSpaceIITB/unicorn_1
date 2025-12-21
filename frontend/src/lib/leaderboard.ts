@@ -104,7 +104,7 @@ export async function getFullLeaderboard(
 export async function submitScore(
   request: SubmitScoreRequest
 ): Promise<SubmitScoreResponse> {
-  const res = await fetch(`${API_BASE}/api/leaderboard/submit`, {
+  const res = await fetch(`${API_BASE}/api/leaderboard/submit/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
@@ -121,7 +121,7 @@ export async function submitScore(
 export async function updateCallsign(
   request: UpdateCallsignRequest
 ): Promise<UpdateCallsignResponse> {
-  const res = await fetch(`${API_BASE}/api/leaderboard/callsign`, {
+  const res = await fetch(`${API_BASE}/api/leaderboard/callsign/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
