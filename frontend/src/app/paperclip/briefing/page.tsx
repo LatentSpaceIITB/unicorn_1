@@ -26,7 +26,7 @@ export default function PaperclipBriefingPage() {
   const handleStartMission = useCallback(async () => {
     setCreating(true);
     try {
-      const response = await fetch(`${API_BASE}/api/paperclip`, {
+      const response = await fetch(`${API_BASE}/api/paperclip/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device_id: deviceId }),
